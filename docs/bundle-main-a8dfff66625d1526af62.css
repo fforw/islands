@@ -1,0 +1,15 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+
+/*# sourceMappingURL=bundle-main-a8dfff66625d1526af62.css.map*/
