@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { Canvas, useFrame } from "react-three-fiber"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
+import { Color } from "three";
 
 const VOLUME = 8;
 
@@ -34,7 +35,7 @@ function Thing() {
             onPointerOver={e => console.log('hover')}
             onPointerOut={e => console.log('unhover')}>
             <boxBufferGeometry attach="geometry" args={ size } />
-            <meshNormalMaterial attach="material" />
+            <meshPhongMaterial attach="material" color={ new Color(0,0,128)} />
         </mesh>
     )
 }
