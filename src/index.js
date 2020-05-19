@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react"
 import ReactDOM from 'react-dom'
 import { Canvas, useFrame } from "react-three-fiber"
-import { ExtrudeBufferGeometry, DirectionalLight, Plane, MeshStandardMaterial } from "react-three-fiber/components"
+import { ExtrudeBufferGeometry, DirectionalLight, Plane, MeshStandardMaterial, HemisphereLight  } from "react-three-fiber/components"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
 import { ACESFilmicToneMapping, Color, sRGBEncoding } from "three";
@@ -43,7 +43,7 @@ function Islands()
             const cy = (graph[n0 + 1] + graph[n1 + 1] + graph[n2 + 1] + graph[n3 + 1]) / 4;
 
             const rnd = Math.random();
-            const h = onEdge ? 0.5  : rnd < 0.7 ? 2 : rnd < 0.98 ? 10 : 15;
+            const h = onEdge ? 0.5  : rnd < 0.7 ? 2 : rnd < 0.98 ? 10 + Math.random() : 15;
             height[i] = h;
 
             const shape = new Shape();
@@ -77,7 +77,7 @@ function Islands()
                         ]}
 
                     />
-                    <MeshStandardMaterial attach="material" roughness={0.1} color="#ffebc2"/>
+                    <MeshStandardMaterial attach="material" roughness={0.9} color="#ffe6ee"/>
                 </mesh>
             );
 
@@ -114,23 +114,32 @@ function Islands()
     )
 }
 
-ReactDOM.render(
-    <Canvas
-        shadowMap
-        camera={{
-            position: [0, -75, 100],
-            fov: 60
-        }}
-    >
-        <Islands />
-        <mesh
-            receiveShadow
+const Game = () => {
+
+    return (
+        <Canvas
+            shadowMap
+            camera={{
+                position: [0, -75, 100],
+                fov: 60
+            }}
         >
-            <planeBufferGeometry attach="geometry" args={[1000, 1000]} />
-            <MeshStandardMaterial attach="material" roughness={0.9} color="#6687e8"/>
-        </mesh>
-        <directionalLight position={[-10, -10, 30]} intensity={0.5} />
-        <spotLight intensity={1} position={[30, 30, 50]} angle={0.7} penumbra={0.5} castShadow />
-    </Canvas>,
+            <Islands />
+            <mesh
+                receiveShadow
+            >
+                <planeBufferGeometry attach="geometry" args={[1000, 1000]} />
+                <MeshStandardMaterial attach="material" roughness={0} color="#6687e8"/>
+            </mesh>
+            <directionalLight position={[0,0,1]} intensity={0.4} color="#e6e8ff"/>
+            <spotLight intensity={1} position={[30, 30, 50]} angle={0.7} penumbra={1} castShadow color="#fff9e6"/>
+        </Canvas>
+    )
+}
+
+
+ReactDOM.render(
+
+    <Game/>,
     document.getElementById('root')
 )
