@@ -1,5 +1,7 @@
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+const CleanObsoleteChunks = require('webpack-clean-obsolete-chunks');
 
 const path = require("path");
 const fs = require("fs");
@@ -63,7 +65,16 @@ module.exports = {
             "process.env.NODE_ENV": JSON.stringify(PRODUCTION ? "production" : "development")
         }),
 
-        new WatchCleanPlugin()
+        new CopyPlugin({
+                patterns: [
+                    {
+                        from: "assets/**/*.glb"
+                    }
+                ]
+            }
+        ),
+
+        new CleanObsoleteChunks()
 
     ],
 
