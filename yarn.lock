@@ -875,6 +875,11 @@
   dependencies:
     commander "^2.15.1"
 
+"@fforw/organic-quads@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@fforw/organic-quads/-/organic-quads-0.0.3.tgz#38b3276ee441b04161d8af8efeba93e8c3c05dd6"
+  integrity sha512-PzDMRnAhiGp1tmSdnt5luxiCDnNjZKEqG93fZhNEjiWyVnz7zKb7faZLlPoOGD50Ea9g18oCVq8EvAljKRKuQg==
+
 "@juggle/resize-observer@^3.1.3":
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/@juggle/resize-observer/-/resize-observer-3.1.3.tgz#d7373eb9a1afc371342b8cf1a07e34368f3d65d7"
