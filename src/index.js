@@ -1,14 +1,18 @@
 import React, { useMemo, useRef, useState } from "react"
 import ReactDOM from 'react-dom'
+import domready from 'domready'
 import { Canvas, useFrame } from "react-three-fiber"
 import { ExtrudeBufferGeometry, DirectionalLight, Plane, MeshStandardMaterial, HemisphereLight  } from "react-three-fiber/components"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
 import { ACESFilmicToneMapping, Color, sRGBEncoding } from "three";
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import OrganicQuads from "@fforw/organic-quads";
 
 
 import {Shape} from "three"
+import loadScene from "./loadScene";
+import loadTexture from "./loadTexture";
 
 function Islands()
 {
@@ -16,7 +20,7 @@ function Islands()
     const island = useMemo(() => {
 
         const organicQuads = new OrganicQuads({
-            numberOfRings: 3,
+            numberOfRings: 4,
             width: 100,
             height: 100,
             addQuads: true
@@ -109,6 +113,8 @@ function Islands()
             {
                 island.boxes
             }
+            <planeBufferGeometry attach="geometry" args={[1000, 1000, 10, 100, 100, 10]} />
+            <MeshStandardMaterial attach="material" roughness={0.33} color="#6687e8" normalMap={ oceanNormals }/>
         </mesh>
 
     )
@@ -120,26 +126,49 @@ const Game = () => {
         <Canvas
             shadowMap
             camera={{
-                position: [0, -75, 100],
+                position: [0, -50, 75],
                 fov: 60
             }}
         >
             <Islands />
-            <mesh
-                receiveShadow
-            >
-                <planeBufferGeometry attach="geometry" args={[1000, 1000]} />
-                <MeshStandardMaterial attach="material" roughness={0} color="#6687e8"/>
-            </mesh>
             <directionalLight position={[0,0,1]} intensity={0.4} color="#e6e8ff"/>
             <spotLight intensity={1} position={[30, 30, 50]} angle={0.7} penumbra={1} castShadow color="#fff9e6"/>
         </Canvas>
     )
 }
 
+let waterMaterial;
+let oceanNormals;
 
-ReactDOM.render(
+Promise.all([
+    loadScene(
+        "assets/tiles.glb",
+    ),
+    loadTexture(
+        "assets/ocean-normals.png"
+    )
+])
+.then(([gltf, tOceanNormals]) => {
 
-    <Game/>,
-    document.getElementById('root')
-)
+    //scene.add( gltf.scene );
+
+    console.log("Scene Objects", gltf.scene.children.map(kid => kid.name).join(", "))
+
+    waterMaterial = gltf.scene.children.find(
+        kid => kid.name === "Water"
+    ).material;
+
+    oceanNormals = tOceanNormals;
+
+    // gltf.animations; // Array<THREE.AnimationClip>
+    // gltf.scene; // THREE.Group
+    // gltf.scenes; // Array<THREE.Group>
+    // gltf.cameras; // Array<THREE.Camera>
+    // gltf.asset; // Object
+
+    ReactDOM.render(
+        <Game/>,
+        document.getElementById("root")
+    )
+
+})

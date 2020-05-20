@@ -7,7 +7,6 @@ const path = require("path");
 const fs = require("fs");
 const webpack = require("webpack");
 const shellJs = require("shelljs");
-const WatchCleanPlugin = require("./tooling/watch-clean");
 
 const PRODUCTION = (process.env.NODE_ENV === "production");
 const STATS = (!!process.env.STATS);
@@ -68,7 +67,7 @@ module.exports = {
         new CopyPlugin({
                 patterns: [
                     {
-                        from: "assets/**/*.glb"
+                        from: "assets/**/*"
                     }
                 ]
             }
