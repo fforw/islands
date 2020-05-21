@@ -79,6 +79,11 @@ module.exports = {
 
     module: {
         rules: [
+            {
+                test: /\.worker\.js$/,
+                use: { loader: 'worker-loader' }
+            },
+
             // babel transpilation ( see .babelrc for babel config)
             {
                 test: /\.js$/,
@@ -130,7 +135,6 @@ module.exports = {
                     }
                 },
             }
-
         ]
     },
 
