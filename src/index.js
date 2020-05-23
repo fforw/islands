@@ -7,6 +7,7 @@ import {
     BufferGeometry,
     CubeCamera,
     DirectionalLight,
+    DoubleSide,
     Float32BufferAttribute,
     FrontSide,
     LinearMipmapLinearFilter,
@@ -20,9 +21,11 @@ import {
 } from "three"
 
 import OrganicQuads, {
+    g_isEdge,
     g_size,
     g_x,
-    g_y, t_isEdge,
+    g_y,
+    t_isEdge,
     t_n0,
     t_n1,
     t_n2,
@@ -41,13 +44,13 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import loadTexture from "./loadTexture";
 
 
-const EFFECTS = false;
+const EFFECTS = true;
 
 const MAX_HEIGHT = 300;
 const QUARTER_HEIGHT = MAX_HEIGHT/4;
 const NOISE_SCALE = 0.003;
-const CLIFF_THRESHOLD = 16;
-const RANDOM_FACTOR = 0.2;
+const CLIFF_THRESHOLD = 8;
+const RANDOM_FACTOR = 0 ;
 
 // size of the outer square around our big hexagon
 const SIZE = 1000;
@@ -66,6 +69,7 @@ const GRASS = 2;
 const DIRT = 3;
 const FOREST = 4;
 const STONE = 5;
+const STONE2 = 6;
 
 const GROUND_COLORS = {
     [WATER] : [0,0.4,0.8],
@@ -73,7 +77,8 @@ const GROUND_COLORS = {
     [GRASS] : [0,0.5,0],
     [DIRT] : [0.5,0.3,0.1],
     [FOREST] : [0.2,0.4,0.3],
-    [STONE] : [0.5,0.5,0.5]
+    [STONE] : [0.5,0.5,0.5],
+    [STONE2] : [0.7,0.7,0.7]
 }
 
 let container, stats;
@@ -83,11 +88,12 @@ let controls, water, sphere;
 
 const td_cx = 0;
 const td_cy = 1;
-const td_cut0 = 2;
-const td_cut1 = 3;
-const td_cut2 = 4;
-const td_cut3 = 5;
-const td_size = 6;
+const td_walkable = 2;
+const td_cut0 = 3;
+const td_cut1 = 4;
+const td_cut2 = 5;
+const td_cut3 = 6;
+const td_size = 7;
 
 let tileData;
 let heightMap;
@@ -107,6 +113,7 @@ function updateCentroids()
 
         tileData[tileDataPos + td_cx] = (graph[n0 + g_x] + graph[n1 + g_x] + graph[n2 + g_x] + graph[n3 + g_x]) / 4;
         tileData[tileDataPos + td_cy] = (graph[n0 + g_y] + graph[n1 + g_y] + graph[n2 + g_y] + graph[n3 + g_y]) / 4;
+        tileData[tileDataPos + td_walkable] = 0;
         tileData[tileDataPos + td_cut0] = -1;
         tileData[tileDataPos + td_cut1] = -1;
         tileData[tileDataPos + td_cut2] = -1;
@@ -139,24 +146,6 @@ function cutCliffs()
 
     const { length } = tiles;
 
-
-
-    const map = {};
-
-    const insert = (a,b) => {
-        if (a > b)
-        {
-            let h = a;
-            a=b;
-            b=h;
-        }
-
-        const key = a + ":" + b;
-
-        const v = map[key];
-        map[key] =  v === undefined ? 1 : v + 1;
-    }
-
     const heightIndexFactor = h_size / g_size;
     const tileDataFactor = td_size / t_size;
 
@@ -178,85 +167,58 @@ function cutCliffs()
 
         //console.log("HEIGHTS", tmpHeight.slice())
 
-        // 4 bits for the 4 vertices involved in the quad. We always set two consecutive bits to cut all vertices
-        // involved in an edge where one of the vertices is cut. last bit wraps around to the first
-
         let cutMask = 0;
 
         if (tileDataIndex0 >= 0 && Math.abs(tmpHeight[0] - tmpHeight[1]) > CLIFF_THRESHOLD)
         {
-            cutMask |= 3;
+            cutMask |= 1;
         }
 
         if (tileDataIndex1 >= 0 && Math.abs(tmpHeight[0] - tmpHeight[2]) > CLIFF_THRESHOLD)
         {
-            cutMask |= 6;
+            cutMask |= 2;
         }
         if (tileDataIndex2 >= 0 && Math.abs(tmpHeight[0] - tmpHeight[3]) > CLIFF_THRESHOLD)
         {
-            cutMask |= 12;
+            cutMask |= 4;
         }
         if (tileDataIndex3 >= 0 && Math.abs(tmpHeight[0] - tmpHeight[4]) > CLIFF_THRESHOLD)
         {
-            cutMask |= 9;
+            cutMask |= 8;
         }
 
         if (cutMask !== 0)
         {
-            let height = tmpHeight[0];
-            // if all edges are cut, keep using the centroid heightmap value,
-            // otherwise recalculate the height as average of the uncut points
-            if (cutMask !== 15)
-            {
-                height = 0;
-                let count = 0;
-                for (let j = 0 ; j < 4; j++)
-                {
-                    if ((cutMask & (1 << j)) === 0)
-                    {
-                        const heightMapIndex = tiles[i + t_n0 + j] * heightIndexFactor;
-                        height += heightMap[heightMapIndex + h_height];
-                        count++;
-                    }
-                }
-                height /= count;
-            }
-
             for (let j = 0 ; j < 4; j++)
             {
                 if (cutMask & (1 << j))
                 {
-                    const heightMapIndex = tiles[i + t_n0 + j] * heightIndexFactor;
+                    const heightMapIndex0 = tiles[i + t_n0 + j] * heightIndexFactor;
+                    const heightMapIndex1 = (j === 3 ? tiles[i + t_n0] : tiles[i + t_n0 + j + 1]) * heightIndexFactor;
 
-                    //console.log("Cutting connection from", i / t_size , " to #" +tiles[i + t_tile0 + j] / t_size, ", new height = ", height )
-                    //console.log({tmpHeight, cutMask})
-
-                    insert(i / t_size,tiles[i + t_tile0 + j] / t_size)
+                    const cut0 = td_cut0 + j;
+                    const cut1 = j === 3 ? td_cut0 : td_cut0 + j + 1;
 
 
-                    tileData[tileDataIndex + td_cut0 + j] = height;
-                    heightMap[heightMapIndex + h_ground] = STONE;
+                    const edgeBefore = j === 0 ? 3 : j - 1;
+                    const edgeAfter = j === 3 ? 0 : j + 1;
 
-                    const other = tiles[i + t_tile0 + j];
+                    const heightOnQuadBefore = tmpHeight[1 + edgeBefore];
+                    const heightOnQuadAfter = tmpHeight[1 + edgeAfter];
+                    const height0 = heightOnQuadBefore >= 0 ? (heightOnQuadBefore + tmpHeight[0]) / 2 : tmpHeight[0];
+                    const height1 = heightOnQuadAfter >= 0 ? (tmpHeight[0] + heightOnQuadAfter) / 2 : tmpHeight[0];
+
+                    tileData[tileDataIndex + cut0] = height0;
+                    tileData[tileDataIndex + cut1] = height1;
+                    heightMap[heightMapIndex0 + h_ground] = STONE;
+                    heightMap[heightMapIndex1 + h_ground] = STONE;
 
                     // cut our connection to the other tile
                     tiles[i + t_tile0 + j] = -1;
-
-
-                    // // and remove us from the other tile
-                    // for (let k = 0 ; k < 4; k++)
-                    // {
-                    //     if (tiles[other + t_tile0 + k] === i)
-                    //     {
-                    //         tiles[other + t_tile0 + k] = -1;
-                    //     }
-                    // }
                 }
             }
         }
     }
-
-    console.log("CUT STATS", JSON.stringify(map, null, 4))
 }
 
 const h_height = 0;
@@ -282,6 +244,7 @@ function findEdgeIndex()
 
 
 const heightIndexFactor = h_size / g_size;
+const tileDataFactor = td_size / t_size;
 
 function walkRecursive(tileIndex, visited)
 {
@@ -290,42 +253,16 @@ function walkRecursive(tileIndex, visited)
     {
         visited.add(tileIndex);
 
-
         const { tiles } = organicQuads;
 
-        const tile0 = tiles[tileIndex + t_tile0];
-        const tile1 = tiles[tileIndex + t_tile1];
-        const tile2 = tiles[tileIndex + t_tile2];
-        const tile3 = tiles[tileIndex + t_tile3];
+        tileData[tileIndex * tileDataFactor + td_walkable] = 1;
 
-        for (let i=0; i < 4; i++)
-        {
-            const heightMapIndex = tiles[tileIndex + t_n0 + i] * heightIndexFactor;
-            const ground = heightMap[heightMapIndex + h_ground];
-            if (ground !== STONE && !tiles[tileIndex + t_isEdge])
-            {
-                heightMap[heightMapIndex + h_ground] = GRASS;
-            }
-        }
-
-
-        walkRecursive(tile0, visited);
-        walkRecursive(tile1, visited);
-        walkRecursive(tile2, visited);
-        walkRecursive(tile3, visited);
+        walkRecursive(tiles[tileIndex + t_tile0], visited);
+        walkRecursive(tiles[tileIndex + t_tile1], visited);
+        walkRecursive(tiles[tileIndex + t_tile2], visited);
+        walkRecursive(tiles[tileIndex + t_tile3], visited);
 
     }
-}
-
-
-function testWalkability()
-{
-    const tileIndex = findEdgeIndex();
-
-    console.log("Starting to walk at #", tileIndex/t_size)
-
-    const visited = new Set();
-    walkRecursive(tileIndex, visited);
 }
 
 
@@ -333,7 +270,7 @@ function createScene()
 {
 
     organicQuads = new OrganicQuads({
-        numberOfRings: 6,
+        numberOfRings: 8,
         width: SIZE,
         height: SIZE,
         graphUserData: 1,
@@ -352,20 +289,47 @@ function createScene()
     const { graph, tiles, config } = organicQuads;
     const { length } = graph;
 
-    heightMap = new Float64Array(length/g_size * h_size);
+    const heightMapFactor = h_size / g_size;
+
+    heightMap = new Float64Array(length * heightMapFactor);
     let pos = 0;
     for (let i=0; i < length; i += g_size)
     {
         heightMap[pos + h_height] = heightFn(graph[i + g_x], graph[i + g_y]);
-        heightMap[pos + h_ground] = SAND;
+        heightMap[pos + h_ground] = STONE2;
 
         pos += h_size;
+    }
+
+
+    for (let i=0; i < tiles.length; i  += t_size)
+    {
+        if (tiles[i + t_isEdge])
+        {
+            for (let j=0; j < 4; j++)
+            {
+                const node = tiles[i + t_n0 + j];
+                const hIdx = node * heightMapFactor;
+                heightMap[hIdx + h_ground] = SAND;
+            }
+        }
     }
 
     tileData = new Float64Array((organicQuads.tiles.length / t_size) * td_size);
     updateCentroids()
     cutCliffs()
     testWalkability();
+}
+
+
+function testWalkability()
+{
+    const tileIndex = findEdgeIndex();
+
+    console.log("Starting to walk at #", tileIndex/t_size)
+
+    const visited = new Set();
+    walkRecursive(tileIndex, visited);
 }
 
 const noise = new SimplexNoise();
@@ -425,7 +389,19 @@ function addHeightMap()
     //     map[key] =  v === undefined ? 1 : v + 1;
     // }
 
-    const getColor = (hIdx) => GROUND_COLORS[heightMap[hIdx + h_ground]] || UNDEFINED_COLOR;
+    const getColor = (hIdx) => {
+
+        const tileDataIndex = hIdx * td_size / h_size;
+
+        const ground = heightMap[hIdx + h_ground];
+        const color = GROUND_COLORS[ground];
+        if (ground !== SAND && tileData[tileDataIndex + td_walkable])
+        {
+            return GROUND_COLORS[GRASS];
+        }
+
+        return color || UNDEFINED_COLOR;
+    };
 
 
     let tileDataIndex = 0;
@@ -452,6 +428,7 @@ function addHeightMap()
         const heightIndex2 = n2 * heightIndexFactor;
         const heightIndex3 = n3 * heightIndexFactor;
 
+        const walkable = tileData[tileDataIndex + td_walkable];
 
 
         const x0 = graph[n0 + g_x];
@@ -562,7 +539,7 @@ function addHeightMap()
 
     const material = new MeshStandardMaterial({
         vertexColors: true,
-        side: FrontSide,
+        side: DoubleSide,
         roughness: 0.5
     });
 
@@ -578,7 +555,7 @@ function addHeightMap()
    const mesh = new Mesh( geometry, material );
 
 
-    mesh.position.set(0, 0.1, 0);
+    mesh.position.set(0, 0.2, 0);
 
     // var wireframe = new WireframeGeometry( geometry );
     //
