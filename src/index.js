@@ -44,7 +44,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import loadTexture from "./loadTexture";
 
 
-const EFFECTS = false;
+const EFFECTS = true;
 
 const DETAIL = 12;
 const MAX_HEIGHT = 500;
