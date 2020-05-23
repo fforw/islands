@@ -265,45 +265,6 @@ const h_ground = 1;
 const h_size = 3;
 
 
-function findEdgeIndex()
-{
-    const { tiles } = organicQuads;
-
-    const { length } = tiles;
-
-    for (let i = 0; i < length; i += t_size)
-    {
-        if (tiles[i + t_isEdge])
-        {
-            return i;
-        }
-    }
-    throw new Error("No edge!?")
-}
-
-
-const heightIndexFactor = h_size / g_size;
-const tileDataFactor = td_size / t_size;
-
-function walkRecursive(tileIndex, visited)
-{
-
-    if (tileIndex >= 0 && !visited.has(tileIndex))
-    {
-        visited.add(tileIndex);
-
-        const { tiles } = organicQuads;
-
-        tileData[tileIndex * tileDataFactor + td_walkable] = 1;
-
-        walkRecursive(tiles[tileIndex + t_tile0], visited);
-        walkRecursive(tiles[tileIndex + t_tile1], visited);
-        walkRecursive(tiles[tileIndex + t_tile2], visited);
-        walkRecursive(tiles[tileIndex + t_tile3], visited);
-
-    }
-}
-
 
 function createScene()
 {
@@ -335,41 +296,117 @@ function createScene()
     for (let i=0; i < length; i += g_size)
     {
         heightMap[pos + h_height] = heightFn(graph[i + g_x], graph[i + g_y]);
-        heightMap[pos + h_ground] = STONE2;
+        heightMap[pos + h_ground] = UNDEFINED;
 
         pos += h_size;
-    }
-
-
-    for (let i=0; i < tiles.length; i  += t_size)
-    {
-        if (tiles[i + t_isEdge])
-        {
-            for (let j=0; j < 4; j++)
-            {
-                const node = tiles[i + t_n0 + j];
-                const hIdx = node * heightMapFactor;
-                heightMap[hIdx + h_ground] = SAND;
-            }
-        }
     }
 
     tileData = new Float64Array((organicQuads.tiles.length / t_size) * td_size);
     updateCentroids()
     cutCliffs()
     testWalkability();
+    generateGround();
+
 }
 
+function generateGround()
+{
+
+    const { graph } = organicQuads;
+    const { length } = graph;
+
+    let heightMapPos = 0;
+    let nodePos = 0;
+    for (let i=0; i < length; i += g_size)
+    {
+
+
+        const x0 = graph[nodePos + g_x];
+        const y0 = heightMap[heightMapPos + h_height];
+        //const y0 = heightMap[heightIndex0 + h_height];
+        const z0 = graph[nodePos + g_y];
+
+        const ground = heightMap[heightMapPos + h_ground];
+
+        if (ground !== STONE)
+        {
+
+            if (y0 < WATER_LIMIT)
+            {
+                heightMap[heightMapPos + h_ground] = WATER;
+            }
+            else if (y0 < SAND_LIMIT)
+            {
+                heightMap[heightMapPos + h_ground] = SAND;
+            }
+            else
+            {
+                const n = noise.noise2D(x0 * GROUND_NOISE_SCALE, z0 * GROUND_NOISE_SCALE);
+
+                if (y0 < FOREST_LIMIT)
+                {
+                    heightMap[heightMapPos + h_ground] = n < 0.2 ? GRASS : FOREST;
+                }
+                else
+                {
+                    heightMap[heightMapPos + h_ground] = n < 0.2 ? FOREST : GRASS;
+                }
+            }
+        }
+
+        heightMapPos += h_size;
+        nodePos += g_size;
+    }
+
+}
 
 function testWalkability()
 {
-    const tileIndex = findEdgeIndex();
+    const tileIndex = findEdgeTile();
 
     console.log("Starting to walk at #", tileIndex/t_size)
 
     const visited = new Set();
     walkRecursive(tileIndex, visited);
 }
+
+function findEdgeTile()
+{
+    const { tiles } = organicQuads;
+
+    const { length } = tiles;
+
+    for (let i = 0; i < length; i += t_size)
+    {
+        if (tiles[i + t_isEdge])
+        {
+            return i;
+        }
+    }
+    throw new Error("No edge!?")
+}
+
+
+const tileDataFactor = td_size / t_size;
+
+function walkRecursive(tileIndex, visited)
+{
+    if (tileIndex >= 0 && !visited.has(tileIndex))
+    {
+        visited.add(tileIndex);
+
+        const { tiles } = organicQuads;
+
+        tileData[tileIndex * tileDataFactor + td_walkable] = 1;
+
+        walkRecursive(tiles[tileIndex + t_tile0], visited);
+        walkRecursive(tiles[tileIndex + t_tile1], visited);
+        walkRecursive(tiles[tileIndex + t_tile2], visited);
+        walkRecursive(tiles[tileIndex + t_tile3], visited);
+
+    }
+}
+
 
 const noise = new SimplexNoise();
 
@@ -434,10 +471,10 @@ function addHeightMap()
 
         const ground = heightMap[hIdx + h_ground];
         const color = GROUND_COLORS[ground];
-        if (ground !== SAND && tileData[tileDataIndex + td_walkable])
-        {
-            return GROUND_COLORS[GRASS];
-        }
+        // if (ground !== STONE && ground !== SAND && tileData[tileDataIndex + td_walkable])
+        // {
+        //     return GROUND_COLORS[GRASS];
+        // }
 
         return color || UNDEFINED_COLOR;
     };
