@@ -44,22 +44,25 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import loadTexture from "./loadTexture";
 
 
-const EFFECTS = true;
+const EFFECTS = false;
 
-const MAX_HEIGHT = 300;
+const DETAIL = 12;
+const MAX_HEIGHT = 500;
 const QUARTER_HEIGHT = MAX_HEIGHT/4;
-const NOISE_SCALE = 0.003;
-const CLIFF_THRESHOLD = 8;
-const RANDOM_FACTOR = 0 ;
+const NOISE_SCALE_1 = 0.003;
+const NOISE_SCALE_2 = 0.07;
+const GROUND_NOISE_SCALE = 0.005;
+const NOISE_RATIO = 0.98;
+const CLIFF_THRESHOLD = 10;
 
 // size of the outer square around our big hexagon
-const SIZE = 1000;
+const SIZE = 1500;
 
 // distance from the center at which the ground becomes flat
-const FLAT_DISTANCE = 300;
-
+const FLAT_DISTANCE = 410;
 
 //////////////////////////////////////////////////////////////////////
+
 
 const DISTANCE_TO_ANGLE_FACTOR = (Math.PI/2) / FLAT_DISTANCE;
 
@@ -70,16 +73,22 @@ const DIRT = 3;
 const FOREST = 4;
 const STONE = 5;
 const STONE2 = 6;
+const UNDEFINED = 7;
 
 const GROUND_COLORS = {
     [WATER] : [0,0.4,0.8],
     [SAND] : [0.8,0.8,0],
-    [GRASS] : [0,0.5,0],
+    [GRASS] : [0,0.7,0],
     [DIRT] : [0.5,0.3,0.1],
-    [FOREST] : [0.2,0.4,0.3],
+    [FOREST] : [0.2,0.5,0.3],
     [STONE] : [0.5,0.5,0.5],
-    [STONE2] : [0.7,0.7,0.7]
+    [STONE2] : [0.7,0.7,0.7],
+    [UNDEFINED] : [1,0,1]
 }
+
+const WATER_LIMIT = 2;
+const SAND_LIMIT = 5.5;
+const FOREST_LIMIT = 60;
 
 let container, stats;
 let camera, scene, renderer, light;
@@ -131,9 +140,39 @@ let organicQuads, envMap;
 function heightFn(x0, z0)
 {
     const distance = Math.sqrt(x0 * x0 + z0 * z0);
-    const heightLimit = distance < FLAT_DISTANCE ?   Math.cos(distance * DISTANCE_TO_ANGLE_FACTOR) : 0;
+    const limit = heightLimit(1 - distance / (SIZE/2));
 
-    return (QUARTER_HEIGHT + (noise.noise2D(x0 * NOISE_SCALE, z0 * NOISE_SCALE) - Math.random() * RANDOM_FACTOR) * QUARTER_HEIGHT) * heightLimit;
+    return Math.max(0, (QUARTER_HEIGHT + ( noise.noise2D(x0 * NOISE_SCALE_1, z0 * NOISE_SCALE_1) * NOISE_RATIO + noise.noise2D(z0 * NOISE_SCALE_2, x0 * NOISE_SCALE_2) * (1-NOISE_RATIO)) * QUARTER_HEIGHT) * limit);
+}
+
+export function heightLimit(x)
+{
+    const beach = 0.05;
+    const beachSquared = beach*beach;
+
+    const mountain = 0.6;
+    const mountain_mid = 0.5;
+
+    if (x < beach)
+    {
+        x = beach - x;
+
+        return beachSquared - x*x;
+    }
+    else if (x < mountain)
+    {
+        x = x - beach;
+        const delta = mountain - beach;
+        return beachSquared + (x * x * (mountain_mid - beachSquared)/ (delta*delta));
+    }
+    else
+    {
+        x = 1 - x;
+
+        const delta = 1 - mountain;
+
+        return 1 - x*x*x * (1 - mountain_mid)/ (delta*delta*delta);
+    }
 }
 
 
@@ -270,7 +309,7 @@ function createScene()
 {
 
     organicQuads = new OrganicQuads({
-        numberOfRings: 8,
+        numberOfRings: DETAIL,
         width: SIZE,
         height: SIZE,
         graphUserData: 1,
