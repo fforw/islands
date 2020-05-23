@@ -1,4 +1,3 @@
-import React from "react"
 import raf from "raf"
 import SimplexNoise from "simplex-noise"
 // noinspection ES6UnusedImports
@@ -52,7 +51,7 @@ const QUARTER_HEIGHT = MAX_HEIGHT/4;
 const NOISE_SCALE_1 = 0.003;
 const NOISE_SCALE_2 = 0.07;
 const GROUND_NOISE_SCALE = 0.005;
-const NOISE_RATIO = 0.98;
+const NOISE_RATIO = 0.99;
 const CLIFF_THRESHOLD = 10;
 
 // size of the outer square around our big hexagon
@@ -730,6 +729,7 @@ function init() {
                 sunColor: "#fff8d5",
                 waterColor: "#000e1e",
                 distortionScale: 2.5,
+                clipBias: 0.0001,
                 fog: true
             }
         );
@@ -833,7 +833,7 @@ function mainLoop() {
     render();
     //stats.update();
 
-    skyParameters.inclination = Math.sin(inclinationCount += 0.01) * 0.5;
+    skyParameters.inclination = 0.1  + Math.sin(inclinationCount += 0.001) * 0.3;
 
     updateSun();
 
@@ -844,7 +844,10 @@ function mainLoop() {
 
 function render() {
 
-    const time = performance.now() * 0.001;
+    const time = performance.now() * 0.0001;
+
+
+    water.position.y = WATER_LIMIT - 0.1 + Math.sin(time) * 0.4;
 
     // sphere.position.y = Math.sin( time ) * 5 + 1;
     // sphere.rotation.x = time * 0.5;
