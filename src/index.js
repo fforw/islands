@@ -654,6 +654,34 @@ function addHeightMap()
 
 }
 
+const skyParameters = {
+    distance: 1000,
+    inclination: 0.05,
+    azimuth: 0.25
+};
+
+function updateSun() {
+
+    if (!sky)
+    {
+        return;
+    }
+
+    const theta = Math.PI * (skyParameters.inclination - 0.5);
+    const phi = 2 * Math.PI * (skyParameters.azimuth - 0.5);
+
+    light.position.x = skyParameters.distance * Math.cos( phi );
+    light.position.y = skyParameters.distance * Math.sin( phi ) * Math.sin( theta );
+    light.position.z = skyParameters.distance * Math.sin( phi ) * Math.cos( theta );
+
+    sky.material.uniforms[ "sunPosition" ].value = light.position.copy( light.position );
+    water && water.material.uniforms[ "sunDirection" ].value.copy( light.position ).normalize();
+
+    cubeCamera.update( renderer, sky );
+
+}
+
+let cubeCamera, sky;
 
 function init() {
 
@@ -680,7 +708,7 @@ function init() {
     light = new DirectionalLight( "#fff8d5", 0.8 );
     scene.add( light );
 
-    const cubeCamera = new CubeCamera(0.2, 1, 512);
+    cubeCamera = new CubeCamera(0.2, 1, 512);
     cubeCamera.renderTarget.texture.generateMipmaps = true;
     cubeCamera.renderTarget.texture.minFilter = LinearMipmapLinearFilter;
 
@@ -723,15 +751,9 @@ function init() {
     }
 
 
-    const parameters = {
-        distance: 1000,
-        inclination: 0.05,
-        azimuth: 0.25
-    };
 
     // Skybox
 
-    let sky;
     if (EFFECTS)
     {
         sky = new Sky();
@@ -789,8 +811,8 @@ function init() {
     //const gui = new GUI();
 
     // const folder = gui.addFolder( "Sky" );
-    // folder.add( parameters, "inclination", 0, 0.5, 0.0001 ).onChange( updateSun );
-    // folder.add( parameters, "azimuth", 0, 1, 0.0001 ).onChange( updateSun );
+    // folder.add( skyParameters, "inclination", 0, 0.5, 0.0001 ).onChange( updateSun );
+    // folder.add( skyParameters, "azimuth", 0, 1, 0.0001 ).onChange( updateSun );
     // folder.open();
     //
     // const uniforms = water.material.uniforms;
@@ -819,10 +841,17 @@ function onWindowResize() {
 
 }
 
+let inclinationCount = 0;
+
 function mainLoop() {
 
     render();
     //stats.update();
+
+    skyParameters.inclination = Math.sin(inclinationCount += 0.01) * 0.5;
+
+    updateSun();
+
     controls.update()
     raf( mainLoop );
 
