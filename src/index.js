@@ -557,22 +557,6 @@ function addHeightMap()
         ny *= f;
         nz *= f;
 
-        vertices.push( x0, y0, z0);
-        vertices.push( x3, y3, z3);
-        vertices.push( x1, y1, z1);
-
-        vertices.push( x1, y1, z1);
-        vertices.push( x3, y3, z3);
-        vertices.push( x2, y2, z2);
-
-
-        normals.push( nx, ny, nz );
-        normals.push( nx, ny, nz );
-        normals.push( nx, ny, nz );
-
-        normals.push( nx, ny, nz );
-        normals.push( nx, ny, nz );
-        normals.push( nx, ny, nz );
 
 
         // const cf = 4 / MAX_HEIGHT;
@@ -588,13 +572,37 @@ function addHeightMap()
         const col2 = getColor(heightIndex2);
         const col3 = getColor(heightIndex3);
 
-        colors.push(col0[0],col0[1],col0[2]);
-        colors.push(col3[0],col3[1],col3[2]);
-        colors.push(col1[0],col1[1],col1[2]);
+        if (
+            !(col0 === GROUND_COLORS[WATER] &&
+              col1 === GROUND_COLORS[WATER] &&
+              col2 === GROUND_COLORS[WATER] &&
+              col3 === GROUND_COLORS[WATER])
+        )
+        {
+            vertices.push(x0, y0, z0);
+            vertices.push(x3, y3, z3);
+            vertices.push(x1, y1, z1);
 
-        colors.push(col1[0],col1[1],col1[2]);
-        colors.push(col3[0],col3[1],col3[2]);
-        colors.push(col2[0],col2[1],col2[2]);
+            vertices.push(x1, y1, z1);
+            vertices.push(x3, y3, z3);
+            vertices.push(x2, y2, z2);
+
+            normals.push(nx, ny, nz);
+            normals.push(nx, ny, nz);
+            normals.push(nx, ny, nz);
+
+            normals.push(nx, ny, nz);
+            normals.push(nx, ny, nz);
+            normals.push(nx, ny, nz);
+
+            colors.push(col0[0], col0[1], col0[2]);
+            colors.push(col3[0], col3[1], col3[2]);
+            colors.push(col1[0], col1[1], col1[2]);
+
+            colors.push(col1[0], col1[1], col1[2]);
+            colors.push(col3[0], col3[1], col3[2]);
+            colors.push(col2[0], col2[1], col2[2]);
+        }
 
         tileDataIndex += td_size;
 
@@ -631,7 +639,7 @@ function addHeightMap()
    const mesh = new Mesh( geometry, material );
 
 
-    mesh.position.set(0, 0.2, 0);
+    mesh.position.set(0, -WATER_LIMIT, 0);
 
     // var wireframe = new WireframeGeometry( geometry );
     //
