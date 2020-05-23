@@ -776,29 +776,14 @@ function init() {
         envMap = null;
     }
 
-    function updateSun() {
-
-        const theta = Math.PI * (parameters.inclination - 0.5);
-        const phi = 2 * Math.PI * (parameters.azimuth - 0.5);
-
-        light.position.x = parameters.distance * Math.cos( phi );
-        light.position.y = parameters.distance * Math.sin( phi ) * Math.sin( theta );
-        light.position.z = parameters.distance * Math.sin( phi ) * Math.cos( theta );
-
-        sky.material.uniforms[ "sunPosition" ].value = light.position.copy( light.position );
-        water && water.material.uniforms[ "sunDirection" ].value.copy( light.position ).normalize();
-
-        cubeCamera.update( renderer, sky );
-
-    }
 
 
 
     controls = new OrbitControls( camera, renderer.domElement );
     controls.maxPolarAngle = Math.PI * 0.45;
     controls.target.set( 0, 0, 0 );
-    controls.minDistance = 40.0;
-    controls.maxDistance = 1000.0;
+    controls.minDistance = 0.0;
+    controls.maxDistance = 1500.0;
     controls.enableDamping = true;
     controls.dampingFactor = 0.02;
     controls.update();
@@ -898,16 +883,16 @@ function extractMarchingSquares(scene)
 
 Promise.all([
 0,//        loadScene("assets/tiles.glb"),
-0,//        loadScene("assets/ground.glb"),
+        loadScene("assets/ground.glb"),
         loadScene("assets/ms.glb"),
-        loadScene("assets/ms-raised.glb"),
+        //loadScene("assets/ms-raised.glb"),
         loadTexture("assets/waternormals.jpg")
     ])
     .then(([
         tiles,
         ground,
         marchingSquares,
-        marchingSquaresRaised,
+        //marchingSquaresRaised,
         tWaterNormals
         ]) => {
 
@@ -937,13 +922,15 @@ Promise.all([
         console.log({ground});
 
 
-        // const msMap = extractMarchingSquares(marchingSquares.scene);
-        // const msMapRaised = extractMarchingSquares(marchingSquaresRaised.scene);
+        const msMap = extractMarchingSquares(marchingSquares.scene);
+        //const msMapRaised = extractMarchingSquares(marchingSquaresRaised.scene);
         //
         // console.log({msMap, msMapRaised})
 
-        // dump(marchingSquares.scene, "ms-normal: ");
-        // dump(marchingSquaresRaised.scene, "ms-raised: ");
+        console.log(msMap);
+
+        //dump(marchingSquares.scene, "ms-normal: ");
+        //dump(marchingSquaresRaised.scene, "ms-raised: ");
 
         console.log("GLTF", tiles)
 
