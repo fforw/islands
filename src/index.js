@@ -3,12 +3,17 @@ import SimplexNoise from "simplex-noise"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
 import {
+    BackSide,
     BufferGeometry,
+    Color,
     CubeCamera,
     DirectionalLight,
     DoubleSide,
     Float32BufferAttribute,
     FrontSide,
+    InstancedMesh,
+    InterleavedBuffer,
+    InterleavedBufferAttribute,
     LinearMipmapLinearFilter,
     Mesh,
     MeshStandardMaterial,
@@ -20,7 +25,6 @@ import {
 } from "three"
 
 import OrganicQuads, {
-    g_isEdge,
     g_size,
     g_x,
     g_y,
@@ -45,10 +49,11 @@ import { heightLimit } from "./heightLimit";
 
 
 const EFFECTS = true;
+const HEIGHT_MAP = true;
 
-const DETAIL = 12;
+const DETAIL = 2;
 const MAX_HEIGHT = 500;
-const QUARTER_HEIGHT = MAX_HEIGHT/4;
+const QUARTER_HEIGHT = MAX_HEIGHT / 4;
 const NOISE_SCALE_1 = 0.003;
 const NOISE_SCALE_2 = 0.07;
 const GROUND_NOISE_SCALE = 0.005;
@@ -63,27 +68,55 @@ const FLAT_DISTANCE = 410;
 
 //////////////////////////////////////////////////////////////////////
 
-
-const DISTANCE_TO_ANGLE_FACTOR = (Math.PI/2) / FLAT_DISTANCE;
-
 const WATER = 0;
 const SAND = 1;
 const GRASS = 2;
 const DIRT = 3;
 const FOREST = 4;
 const STONE = 5;
-const STONE2 = 6;
-const UNDEFINED = 7;
+const UNDEFINED = 6;
+const NUM_MATERIALS = 7;
+
+const MATERIAL_NAMES = [
+    "Water", // WATER
+    "Sand", // SAND
+    "Grass", // GRASS
+    "Dirt", // DIRT
+    "Forest", // FOREST
+    "Stone", // STONE
+];
+
+const CASE_NAMES = [
+    null,
+    "case-1",
+    "case-2",
+    "case-3",
+    "case-4",
+    "case-5",
+    "case-6",
+    "case-7",
+    "case-8",
+    "case-9",
+    "case-10",
+    "case-11",
+    "case-12",
+    "case-13",
+    "case-14",
+    "case-15",
+    "case-m1",
+    "case-m2",
+    "case-m3",
+    "case-m4"
+];
 
 const GROUND_COLORS = {
-    [WATER] : [0,0.4,0.8],
-    [SAND] : [0.8,0.8,0],
-    [GRASS] : [0,0.7,0],
-    [DIRT] : [0.5,0.3,0.1],
-    [FOREST] : [0.2,0.5,0.3],
-    [STONE] : [0.5,0.5,0.5],
-    [STONE2] : [0.7,0.7,0.7],
-    [UNDEFINED] : [1,0,1]
+    [WATER]: [0, 0.4, 0.8],
+    [SAND]: [0.8, 0.8, 0],
+    [GRASS]: [0, 0.7, 0],
+    [DIRT]: [0.5, 0.3, 0.1],
+    [FOREST]: [0.2, 0.5, 0.3],
+    [STONE]: [0.5, 0.5, 0.5],
+    [UNDEFINED]: [1, 0, 1]
 }
 
 const WATER_LIMIT = 2;
@@ -92,8 +125,7 @@ const FOREST_LIMIT = 60;
 
 let container, stats;
 let camera, scene, renderer, light;
-let controls, water, sphere;
-
+let controls, water;
 
 const td_cx = 0;
 const td_cy = 1;
@@ -106,14 +138,16 @@ const td_size = 7;
 
 let tileData;
 let heightMap;
+let materials;
+
 
 function updateCentroids()
 {
-    const { graph, tiles } = organicQuads;
-    const { length } = tiles;
+    const {graph, tiles} = organicQuads;
+    const {length} = tiles;
 
     let tileDataPos = 0;
-    for (let i=0; i < length; i += t_size)
+    for (let i = 0; i < length; i += t_size)
     {
         const n0 = tiles[i + t_n0];
         const n1 = tiles[i + t_n1];
@@ -133,59 +167,29 @@ function updateCentroids()
 
 }
 
-let organicQuads, envMap;
 
+let organicQuads, envMap;
 
 
 function heightFn(x0, z0)
 {
     const distance = Math.sqrt(x0 * x0 + z0 * z0);
-    const limit = heightLimit(1 - distance / (SIZE/2));
+    const limit = heightLimit(1 - distance / (SIZE / 2));
 
-    return Math.max(0, (QUARTER_HEIGHT + ( noise.noise2D(x0 * NOISE_SCALE_1, z0 * NOISE_SCALE_1) * NOISE_RATIO + noise.noise2D(z0 * NOISE_SCALE_2, x0 * NOISE_SCALE_2) * (1-NOISE_RATIO)) * QUARTER_HEIGHT) * limit);
-}
-
-export function heightLimit(x)
-{
-    const beach = 0.05;
-    const beachSquared = beach*beach;
-
-    const mountain = 0.6;
-    const mountain_mid = 0.5;
-
-    if (x < beach)
-    {
-        x = beach - x;
-
-        return beachSquared - x*x;
-    }
-    else if (x < mountain)
-    {
-        x = x - beach;
-        const delta = mountain - beach;
-        return beachSquared + (x * x * (mountain_mid - beachSquared)/ (delta*delta));
-    }
-    else
-    {
-        x = 1 - x;
-
-        const delta = 1 - mountain;
-
-        return 1 - x*x*x * (1 - mountain_mid)/ (delta*delta*delta);
-    }
+    return Math.max(0, (QUARTER_HEIGHT + (noise.noise2D(x0 * NOISE_SCALE_1, z0 * NOISE_SCALE_1) * NOISE_RATIO + noise.noise2D(z0 * NOISE_SCALE_2, x0 * NOISE_SCALE_2) * (1 - NOISE_RATIO)) * QUARTER_HEIGHT) * limit);
 }
 
 
-const tmpHeight= new Float64Array(5);
+const tmpHeight = new Float64Array(5);
+
 
 function cutCliffs()
 {
 
-    const { graph, tiles } = organicQuads;
+    const {graph, tiles} = organicQuads;
 
-    const { length } = tiles;
+    const {length} = tiles;
 
-    const heightIndexFactor = h_size / g_size;
     const tileDataFactor = td_size / t_size;
 
     for (let i = 0; i < length; i += t_size)
@@ -197,12 +201,16 @@ function cutCliffs()
         const tileDataIndex2 = tiles[i + t_tile2] * tileDataFactor;
         const tileDataIndex3 = tiles[i + t_tile3] * tileDataFactor;
 
-        tmpHeight[0] = heightFn( tileData[tileDataIndex], tileData[tileDataIndex + 1] )
+        tmpHeight[0] = heightFn(tileData[tileDataIndex], tileData[tileDataIndex + 1])
 
-        tmpHeight[1] = tileDataIndex0 >= 0 ? heightFn( tileData[tileDataIndex0 + td_cx], tileData[tileDataIndex0 + td_cy] ) : -1;
-        tmpHeight[2] = tileDataIndex1 >= 0 ? heightFn( tileData[tileDataIndex1 + td_cx], tileData[tileDataIndex1 + td_cy] ) : -1;
-        tmpHeight[3] = tileDataIndex2 >= 0 ? heightFn( tileData[tileDataIndex2 + td_cx], tileData[tileDataIndex2 + td_cy] ) : -1;
-        tmpHeight[4] = tileDataIndex3 >= 0 ? heightFn( tileData[tileDataIndex3 + td_cx], tileData[tileDataIndex3 + td_cy] ) : -1;
+        tmpHeight[1] =
+            tileDataIndex0 >= 0 ? heightFn(tileData[tileDataIndex0 + td_cx], tileData[tileDataIndex0 + td_cy]) : -1;
+        tmpHeight[2] =
+            tileDataIndex1 >= 0 ? heightFn(tileData[tileDataIndex1 + td_cx], tileData[tileDataIndex1 + td_cy]) : -1;
+        tmpHeight[3] =
+            tileDataIndex2 >= 0 ? heightFn(tileData[tileDataIndex2 + td_cx], tileData[tileDataIndex2 + td_cy]) : -1;
+        tmpHeight[4] =
+            tileDataIndex3 >= 0 ? heightFn(tileData[tileDataIndex3 + td_cx], tileData[tileDataIndex3 + td_cy]) : -1;
 
         //console.log("HEIGHTS", tmpHeight.slice())
 
@@ -228,7 +236,7 @@ function cutCliffs()
 
         if (cutMask !== 0)
         {
-            for (let j = 0 ; j < 4; j++)
+            for (let j = 0; j < 4; j++)
             {
                 if (cutMask & (1 << j))
                 {
@@ -237,7 +245,6 @@ function cutCliffs()
 
                     const cut0 = td_cut0 + j;
                     const cut1 = j === 3 ? td_cut0 : td_cut0 + j + 1;
-
 
                     const edgeBefore = j === 0 ? 3 : j - 1;
                     const edgeAfter = j === 3 ? 0 : j + 1;
@@ -260,10 +267,10 @@ function cutCliffs()
     }
 }
 
+
 const h_height = 0;
 const h_ground = 1;
 const h_size = 3;
-
 
 
 function createScene()
@@ -285,15 +292,14 @@ function createScene()
         // }
     });
 
-
-    const { graph, tiles, config } = organicQuads;
-    const { length } = graph;
+    const {graph, tiles, config} = organicQuads;
+    const {length} = graph;
 
     const heightMapFactor = h_size / g_size;
 
     heightMap = new Float64Array(length * heightMapFactor);
     let pos = 0;
-    for (let i=0; i < length; i += g_size)
+    for (let i = 0; i < length; i += g_size)
     {
         heightMap[pos + h_height] = heightFn(graph[i + g_x], graph[i + g_y]);
         heightMap[pos + h_ground] = UNDEFINED;
@@ -309,17 +315,17 @@ function createScene()
 
 }
 
+
 function generateGround()
 {
 
-    const { graph } = organicQuads;
-    const { length } = graph;
+    const {graph} = organicQuads;
+    const {length} = graph;
 
     let heightMapPos = 0;
     let nodePos = 0;
-    for (let i=0; i < length; i += g_size)
+    for (let i = 0; i < length; i += g_size)
     {
-
 
         const x0 = graph[nodePos + g_x];
         const y0 = heightMap[heightMapPos + h_height];
@@ -360,21 +366,23 @@ function generateGround()
 
 }
 
+
 function testWalkability()
 {
     const tileIndex = findEdgeTile();
 
-    console.log("Starting to walk at #", tileIndex/t_size)
+    console.log("Starting to walk at #", tileIndex / t_size)
 
     const visited = new Set();
     walkRecursive(tileIndex, visited);
 }
 
+
 function findEdgeTile()
 {
-    const { tiles } = organicQuads;
+    const {tiles} = organicQuads;
 
-    const { length } = tiles;
+    const {length} = tiles;
 
     for (let i = 0; i < length; i += t_size)
     {
@@ -389,13 +397,14 @@ function findEdgeTile()
 
 const tileDataFactor = td_size / t_size;
 
+
 function walkRecursive(tileIndex, visited)
 {
     if (tileIndex >= 0 && !visited.has(tileIndex))
     {
         visited.add(tileIndex);
 
-        const { tiles } = organicQuads;
+        const {tiles} = organicQuads;
 
         tileData[tileIndex * tileDataFactor + td_walkable] = 1;
 
@@ -437,17 +446,13 @@ function addHeightMap()
     const segmentSize = size / segments;
 
     // generate vertices, normals and color data for a simple grid geometry
-    const { graph, tiles, config } = organicQuads;
+    const {graph, tiles, config} = organicQuads;
 
-    const { length } = tiles;
+    const {length} = tiles;
 
+    console.log("Height map for ", length / t_size, " tiles");
 
-    console.log("Height map for ", length/t_size , " tiles");
-
-    const heightIndexFactor = h_size / g_size;
-
-    const UNDEFINED_COLOR = [1,0,1];
-
+    const UNDEFINED_COLOR = [1, 0, 1];
 
     // const map = {};
     //
@@ -479,7 +484,6 @@ function addHeightMap()
         return color || UNDEFINED_COLOR;
     };
 
-
     let tileDataIndex = 0;
     for (let i = 0; i < length; i += t_size)
     {
@@ -506,24 +510,31 @@ function addHeightMap()
 
         const walkable = tileData[tileDataIndex + td_walkable];
 
-
         const x0 = graph[n0 + g_x];
-        const y0 = tileData[tileDataIndex + td_cut0] === -1 ? heightMap[heightIndex0 + h_height] : tileData[tileDataIndex + td_cut0];
+        const y0 = tileData[tileDataIndex + td_cut0] === -1 ?
+            heightMap[heightIndex0 + h_height] :
+            tileData[tileDataIndex + td_cut0];
         //const y0 = heightMap[heightIndex0 + h_height];
         const z0 = graph[n0 + g_y];
 
         const x1 = graph[n1 + g_x];
-        const y1 = tileData[tileDataIndex + td_cut1] === -1 ? heightMap[heightIndex1 + h_height] : tileData[tileDataIndex + td_cut1];
+        const y1 = tileData[tileDataIndex + td_cut1] === -1 ?
+            heightMap[heightIndex1 + h_height] :
+            tileData[tileDataIndex + td_cut1];
         //const y1 = heightMap[heightIndex1 + h_height];
         const z1 = graph[n1 + g_y];
 
         const x2 = graph[n2 + g_x];
-        const y2 = tileData[tileDataIndex + td_cut2] === -1 ? heightMap[heightIndex2 + h_height] : tileData[tileDataIndex + td_cut2];
+        const y2 = tileData[tileDataIndex + td_cut2] === -1 ?
+            heightMap[heightIndex2 + h_height] :
+            tileData[tileDataIndex + td_cut2];
         //const y2 = heightMap[heightIndex2 + h_height]
         const z2 = graph[n2 + g_y];
 
         const x3 = graph[n3 + g_x];
-        const y3 = tileData[tileDataIndex + td_cut3] === -1 ? heightMap[heightIndex3 + h_height] : tileData[tileDataIndex + td_cut3];
+        const y3 = tileData[tileDataIndex + td_cut3] === -1 ?
+            heightMap[heightIndex3 + h_height] :
+            tileData[tileDataIndex + td_cut3];
         //const y3 = heightMap[heightIndex3 + h_height];
         const z3 = graph[n3 + g_y];
 
@@ -548,16 +559,14 @@ function addHeightMap()
         const n1z = ax * cy - ay * cx;
 
         // average and renormalize
-        let nx = (n0x + n1x)/2;
-        let ny = (n0y + n1y)/2;
-        let nz = (n0z + n1z)/2;
+        let nx = (n0x + n1x) / 2;
+        let ny = (n0y + n1y) / 2;
+        let nz = (n0z + n1z) / 2;
 
-        const f = 1 / Math.sqrt(nx*nx+ny*ny+nz*nz);
+        const f = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
         nx *= f;
         ny *= f;
         nz *= f;
-
-
 
         // const cf = 4 / MAX_HEIGHT;
         //
@@ -616,10 +625,9 @@ function addHeightMap()
     //
     console.log({vertices, normals, colors})
 
-
-    geometry.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
-    geometry.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
-    geometry.setAttribute( 'color', new Float32BufferAttribute( colors, 3 ) );
+    geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+    geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
 
     const material = new MeshStandardMaterial({
         vertexColors: true,
@@ -636,8 +644,7 @@ function addHeightMap()
     //     console.log({uniforms})
     // };
 
-   const mesh = new Mesh( geometry, material );
-
+    const mesh = new Mesh(geometry, material);
 
     mesh.position.set(0, -WATER_LIMIT, 0);
 
@@ -650,9 +657,10 @@ function addHeightMap()
     //
     //
     // scene.add( line );
-    scene.add( mesh );
+    scene.add(mesh);
 
 }
+
 
 const skyParameters = {
     distance: 1000,
@@ -660,7 +668,9 @@ const skyParameters = {
     azimuth: 0.25
 };
 
-function updateSun() {
+
+function updateSun()
+{
 
     if (!sky)
     {
@@ -670,43 +680,46 @@ function updateSun() {
     const theta = Math.PI * (skyParameters.inclination - 0.5);
     const phi = 2 * Math.PI * (skyParameters.azimuth - 0.5);
 
-    light.position.x = skyParameters.distance * Math.cos( phi );
-    light.position.y = skyParameters.distance * Math.sin( phi ) * Math.sin( theta );
-    light.position.z = skyParameters.distance * Math.sin( phi ) * Math.cos( theta );
+    light.position.x = skyParameters.distance * Math.cos(phi);
+    light.position.y = skyParameters.distance * Math.sin(phi) * Math.sin(theta);
+    light.position.z = skyParameters.distance * Math.sin(phi) * Math.cos(theta);
 
-    sky.material.uniforms[ "sunPosition" ].value = light.position.copy( light.position );
-    water && water.material.uniforms[ "sunDirection" ].value.copy( light.position ).normalize();
+    sky.material.uniforms["sunPosition"].value = light.position.copy(light.position);
+    water && water.material.uniforms["sunDirection"].value.copy(light.position).normalize();
 
-    cubeCamera.update( renderer, sky );
+    cubeCamera.update(renderer, sky);
 
 }
 
+
 let cubeCamera, sky;
 
-function init() {
+
+function init()
+{
 
     createScene();
 
-    container = document.getElementById( "container" );
+    container = document.getElementById("container");
 
     //
 
     renderer = new WebGLRenderer();
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    container.appendChild( renderer.domElement );
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
 
     //
 
     scene = new Scene();
 
-    camera = new PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 1, 20000 );
-    camera.position.set( 250, 250, 1000 );
+    camera = new PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
+    camera.position.set(250, 250, 1000);
 
     //
 
-    light = new DirectionalLight( "#fff8d5", 0.8 );
-    scene.add( light );
+    light = new DirectionalLight("#fff8d5", 0.8);
+    scene.add(light);
 
     cubeCamera = new CubeCamera(0.2, 1, 512);
     cubeCamera.renderTarget.texture.generateMipmaps = true;
@@ -716,7 +729,7 @@ function init() {
 
     // Water
 
-    const waterGeometry = new PlaneBufferGeometry(10000, 10000);
+    const waterGeometry = new PlaneBufferGeometry(30000, 30000);
     if (EFFECTS)
     {
         water = new Water(
@@ -734,8 +747,8 @@ function init() {
                 fog: true
             }
         );
-        water.rotation.x = - Math.PI / 2;
-        scene.add( water );
+        water.rotation.x = -Math.PI / 2;
+        scene.add(water);
     }
     else
     {
@@ -746,12 +759,10 @@ function init() {
             roughness: 0.0
         });
 
-        const mesh = new Mesh( waterGeometry, material );
-        mesh.rotation.x = - Math.PI / 2;
+        const mesh = new Mesh(waterGeometry, material);
+        mesh.rotation.x = -Math.PI / 2;
         scene.add(mesh)
     }
-
-
 
     // Skybox
 
@@ -761,12 +772,11 @@ function init() {
 
         const uniforms = sky.material.uniforms;
 
-        uniforms[ "turbidity" ].value = 5;
-        uniforms[ "rayleigh" ].value = 1.5;
-        uniforms[ "luminance" ].value = 1;
-        uniforms[ "mieCoefficient" ].value = 0.05;
-        uniforms[ "mieDirectionalG" ].value = 0.9;
-
+        uniforms["turbidity"].value = 5;
+        uniforms["rayleigh"].value = 1.5;
+        uniforms["luminance"].value = 1;
+        uniforms["mieCoefficient"].value = 0.05;
+        uniforms["mieDirectionalG"].value = 0.9;
 
         envMap = cubeCamera.renderTarget.texture
 
@@ -777,12 +787,9 @@ function init() {
         envMap = null;
     }
 
-
-
-
-    controls = new OrbitControls( camera, renderer.domElement );
+    controls = new OrbitControls(camera, renderer.domElement);
     controls.maxPolarAngle = Math.PI * 0.45;
-    controls.target.set( 0, 0, 0 );
+    controls.target.set(0, 0, 0);
     controls.minDistance = 0.0;
     controls.maxDistance = 1500.0;
     controls.enableDamping = true;
@@ -809,46 +816,305 @@ function init() {
     // folder.add( uniforms.alpha, "value", 0.9, 1, .001 ).name( "alpha" );
     // folder.open();
 
-
-    window.addEventListener( "resize", onWindowResize, false );
+    window.addEventListener("resize", onWindowResize, false);
 
     ////////////////
-    
-    addHeightMap();
+
+    if (HEIGHT_MAP)
+    {
+        addHeightMap();
+    }
+    else
+    {
+        addMarchingSquareObjects(marchingSquaresArray);
+    }
 
 }
 
-function onWindowResize() {
+
+let materialCompile = 0;
+let materialGenerate = 0;
+
+
+function addMarchingSquareObjects(marchingSquaresArray)
+{
+
+    let material;
+    for (let i = WATER + 1; i < NUM_MATERIALS; i++)
+    {
+        material = null;
+        const attrsArray = createMarchingSquares(i);
+        for (let j = 1; j < attrsArray.length; j++)
+        {
+            const attrs = attrsArray[j];
+            if (attrs)
+            {
+                if (!material)
+                {
+                    //console.log("Create material ", MATERIAL_NAMES[i], "#", materialGenerate++)
+
+                    material = new MeshStandardMaterial({
+                        color: new Color(... GROUND_COLORS[i]),
+                        side: BackSide,
+                        roughness: 0.5
+                    });
+
+
+                    // language=GLSL
+                    const colorParsChunk = `
+                        attribute vec3 pos;
+                        attribute vec3 up;
+                        attribute vec3 vX1;
+                        attribute vec3 vX2;
+                        attribute vec3 vY1;
+                        #include <common>
+                    `;
+
+                    // language=GLSL
+                    const instanceColorChunk = `
+
+                        vec3 vAxisStart = pos + position.x * vX1;
+                        vec3 vAxisEnd = pos + vY1 + position.x * vX2;
+                        
+                        vec3 transformed = vAxisStart + (vAxisEnd - vAxisStart) * position.y + position.z * up;
+
+                        vec3 vNormAxisStart = vNormal.x * vX1;
+                        vec3 vNormAxisEnd = vY1 + vNormal.x * vX2;
+                        
+                        vNormal = normalize(vNormAxisStart + (vNormAxisEnd - vNormAxisStart) * vNormal.y  + vNormal.z * up);
+                        
+                    `
+
+                    // const vAxisStart = vX1.copy().scale(mouseX).add(pos);
+                    // const vAxisEnd = vX2.copy().scale(mouseX).add(pos).add(vY1);
+                    // const transformed = vAxisEnd.subtract(vAxisStart).scale(mouseY).add(vAxisStart)
+
+
+                    material.onBeforeCompile = shader => {
+
+                        const { vertexShader } = shader;
+
+                        shader.vertexShader = vertexShader
+                            .replace( '#include <common>', colorParsChunk )
+                            .replace( '#include <begin_vertex>', instanceColorChunk );
+
+                        //console.log("Compiling material ", MATERIAL_NAMES[i], "#", materialCompile++);
+
+                        //console.log("VERT\n", shader.vertexShader)
+                        //console.log("FRAG\n", shader.fragmentShader)
+                        //console.log(shader.uniforms)
+
+                    };
+                }
+
+                const count = attrs.length / ms_attrs_size + 1;
+                const geometry = marchingSquaresArray[j];
+
+                const positionBuffer = new InterleavedBuffer(
+                    new Float32Array(attrs),
+                    ms_attrs_size
+                );
+
+                geometry.setAttribute("pos", new InterleavedBufferAttribute(positionBuffer, 3, 0, false));
+                geometry.setAttribute("up", new InterleavedBufferAttribute(positionBuffer, 3, 3, false));
+                geometry.setAttribute("vX1", new InterleavedBufferAttribute(positionBuffer, 3, 6, false));
+                geometry.setAttribute("vX2", new InterleavedBufferAttribute(positionBuffer, 3, 9, false));
+                geometry.setAttribute("vY1", new InterleavedBufferAttribute(positionBuffer, 3, 12, false));
+
+                //console.log("Instance count for ", MATERIAL_NAMES[i], "/", CASE_NAMES[j], " = ", count, geometry);
+
+                const mesh = new InstancedMesh(geometry, material, count);
+                scene.add(mesh);
+            }
+        }
+    }
+}
+
+
+const heightIndexFactor = h_size / g_size;
+
+
+function createMarchingSquares(ground)
+{
+    let count = 0;
+
+    const {graph, tiles} = organicQuads;
+
+    const {length} = tiles;
+
+    const attrsArray = new Array(marchingSquaresArray.length);
+
+    let tileDataIndex = 0;
+    for (let i = 0; i < length; i += t_size)
+    {
+        // node indizes for our quad
+        const n0 = tiles[i + t_n0];
+        const n1 = tiles[i + t_n1];
+        const n2 = tiles[i + t_n2];
+        const n3 = tiles[i + t_n3];
+
+        // equivalent height map indizes
+        const heightIndex0 = n0 * heightIndexFactor;
+        const heightIndex1 = n1 * heightIndexFactor;
+        const heightIndex2 = n2 * heightIndexFactor;
+        const heightIndex3 = n3 * heightIndexFactor;
+
+        const x0 = graph[n0 + g_x];
+        const y0 = tileData[tileDataIndex + td_cut0] === -1 ?
+            heightMap[heightIndex0 + h_height] :
+            tileData[tileDataIndex + td_cut0];
+        //const y0 = heightMap[heightIndex0 + h_height];
+        const z0 = graph[n0 + g_y];
+
+        const x1 = graph[n1 + g_x];
+        const y1 = tileData[tileDataIndex + td_cut1] === -1 ?
+            heightMap[heightIndex1 + h_height] :
+            tileData[tileDataIndex + td_cut1];
+        //const y1 = heightMap[heightIndex1 + h_height];
+        const z1 = graph[n1 + g_y];
+
+        const x2 = graph[n2 + g_x];
+        const y2 = tileData[tileDataIndex + td_cut2] === -1 ?
+            heightMap[heightIndex2 + h_height] :
+            tileData[tileDataIndex + td_cut2];
+        //const y2 = heightMap[heightIndex2 + h_height]
+        const z2 = graph[n2 + g_y];
+
+        const x3 = graph[n3 + g_x];
+        const y3 = tileData[tileDataIndex + td_cut3] === -1 ?
+            heightMap[heightIndex3 + h_height] :
+            tileData[tileDataIndex + td_cut3];
+        //const y3 = heightMap[heightIndex3 + h_height];
+        const z3 = graph[n3 + g_y];
+
+        const ax = (x0 - x1);
+        const ay = (y0 - y1);
+        const az = (z0 - z1);
+        const bx = (x2 - x1);
+        const by = (y2 - y1);
+        const bz = (z2 - z1);
+        const cx = (x3 - x1);
+        const cy = (y3 - y1);
+        const cz = (z3 - z1);
+
+        // normal vector based on points 0, 1 and 2
+        const n0x = ay * bz - az * by;
+        const n0y = az * bx - ax * bz;
+        const n0z = ax * by - ay * bx;
+
+        // normal vector based on points 0, 1 and 3
+        const n1x = ay * cz - az * cy;
+        const n1y = az * cx - ax * cz;
+        const n1z = ax * cy - ay * cx;
+
+        // average with world up and renormalize
+        let nx = (n0x + n1x) / 3;
+        let ny = (n0y + n1y + 1) / 3;
+        let nz = (n0z + n1z) / 3;
+
+        const f = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
+        nx *= f;
+        ny *= f;
+        nz *= f;
+
+        const g1 = heightMap[heightIndex0 + h_ground];
+        const g2 = heightMap[heightIndex1 + h_ground];
+        const g4 = heightMap[heightIndex2 + h_ground];
+        const g8 = heightMap[heightIndex3 + h_ground];
+        let tileCase = (
+            g1 === ground ? 1 : 0 +
+            g2 === ground ? 2 : 0 +
+            g4 === ground ? 4 : 0 +
+            g8 === ground ? 8 : 0
+        )
+
+        if (tileCase !== 0)
+        {
+            // fix multi-color gaps
+            if (tileCase === 1 && g2 !== g8)
+            {
+                tileCase = 16;
+            }
+            else if (tileCase === 2 && g4 !== g1)
+            {
+                tileCase = 17;
+            }
+            else if (tileCase === 4 && g8 !== g2)
+            {
+                tileCase = 18;
+            }
+            else if (tileCase === 8 && g1 !== g4)
+            {
+                tileCase = 19;
+            }
+
+            let attrs = attrsArray[tileCase];
+            if (!attrs)
+            {
+                attrs = [];
+                attrsArray[tileCase] = attrs;
+            }
+
+            attrs.push(
+                // pos
+                x0, y0, z0,
+                // up
+                nx, ny, nz,
+                // vX1
+                x3 - x0, y3 - y0, z3 - z0,
+                // vX2
+                x2 - x1, y2 - y1, z2 - z1,
+                // vY1
+                x1 - x0, y1 - y0, z1 - z0
+            )
+        }
+
+        tileDataIndex += td_size;
+    }
+
+    return attrsArray;
+}
+
+
+const ms_attrs_size = 15;
+
+
+function onWindowResize()
+{
 
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
 }
 
+
 let inclinationCount = 0;
 
-function mainLoop() {
+
+function mainLoop()
+{
 
     render();
     //stats.update();
 
-    skyParameters.inclination = 0.1  + Math.sin(inclinationCount += 0.001) * 0.3;
+    skyParameters.inclination = 0.1 + Math.sin(inclinationCount += 0.001) * 0.3;
 
     updateSun();
 
     controls.update()
-    raf( mainLoop );
+    raf(mainLoop);
 
 }
 
-function render() {
+
+let first = true;
+
+function render()
+{
 
     const time = performance.now() * 0.0001;
-
-
-    water.position.y = WATER_LIMIT - 0.1 + Math.sin(time) * 0.4;
 
     // sphere.position.y = Math.sin( time ) * 5 + 1;
     // sphere.rotation.x = time * 0.5;
@@ -856,62 +1122,71 @@ function render() {
 
     if (water)
     {
-        water.material.uniforms[ "time" ].value += 1.0 / 60.0;
+        water.position.y = WATER_LIMIT - 0.1 + Math.sin(time) * 0.4;
+        water.material.uniforms["time"].value += 1.0 / 60.0;
     }
 
-    renderer.render( scene, camera );
+    renderer.render(scene, camera);
 
+    if(first)
+    {
+        //console.log({materialCompile})
+    }
+
+    first = false;
 }
 
 
-let waterNormals;
+let waterNormals, marchingSquaresArray;
 
 
 function extractMarchingSquares(scene)
 {
-    const { children } = scene;
+    const {children} = scene;
 
-    const map = new Map();
+    const array = new Array(CASE_NAMES.length);
 
     for (let i = 0; i < children.length; i++)
     {
         const kid = children[i];
-        if (kid.name.indexOf("case-") === 0)
+
+        const index = CASE_NAMES.indexOf(kid.name);
+        if (index >= 0)
         {
-            map.set(kid.name, kid);
+            array[index] = kid.geometry;
         }
     }
-    return map;
+    return array;
 }
 
 
 Promise.all([
-0,//        loadScene("assets/tiles.glb"),
-        loadScene("assets/ground.glb"),
-        loadScene("assets/ms.glb"),
-        //loadScene("assets/ms-raised.glb"),
-        loadTexture("assets/waternormals.jpg")
-    ])
+    0,//        loadScene("assets/tiles.glb"),
+    loadScene("assets/ground.glb"),
+    loadScene("assets/ms.glb"),
+    //loadScene("assets/ms-raised.glb"),
+    loadTexture("assets/waternormals.jpg")
+])
     .then(([
-        tiles,
-        ground,
-        marchingSquares,
-        //marchingSquaresRaised,
-        tWaterNormals
-        ]) => {
+               tiles,
+               ground,
+               marchingSquares,
+               //marchingSquaresRaised,
+               tWaterNormals
+           ]) => {
 
         //scene.add( tiles.scene );
 
         function dump(obj, level = "")
         {
-            const { type }  = obj;
+            const {type} = obj;
             if (type === "Group")
             {
                 console.log(level + "GROUP", obj.name)
 
                 const nextLevel = level + "    "
 
-                const { children }  = obj;
+                const {children} = obj;
                 for (let i = 0; i < children.length; i++)
                 {
                     dump(children[i], nextLevel);
@@ -923,15 +1198,19 @@ Promise.all([
             }
         }
 
-        console.log({ground});
 
+        materials = MATERIAL_NAMES.map(n => {
+            return ground.scene.children.find(kid => kid.name === n).material;
+        })
 
-        const msMap = extractMarchingSquares(marchingSquares.scene);
+        console.log({materials});
+
+        marchingSquaresArray = extractMarchingSquares(marchingSquares.scene);
         //const msMapRaised = extractMarchingSquares(marchingSquaresRaised.scene);
         //
-        // console.log({msMap, msMapRaised})
+        // console.log({marchingSquaresArray, msMapRaised})
 
-        console.log(msMap);
+        console.log(marchingSquaresArray);
 
         //dump(marchingSquares.scene, "ms-normal: ");
         //dump(marchingSquaresRaised.scene, "ms-raised: ");
