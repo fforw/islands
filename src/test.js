@@ -1,6 +1,5 @@
 import domready from "domready"
 import raf from "raf"
-import perfNow from "performance-now"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
 import { Vector } from "@fforw/organic-quads";
@@ -20,13 +19,17 @@ let ctx, canvas;
 let mouseX = 0;
 let mouseY = 0;
 
+let pos;
+let vX1;
+let vX2;
+let vY1;
+
 /**
  * Basic 2D visualization of our 3D quad projection.
  *
  * Projects the mouse cursor relative to the blue quad onto the red squad and draws a green dot.
  *
  */
-
 domready(
     () => {
 
@@ -72,58 +75,96 @@ domready(
                 const y = Math.cos(angle) * dist;
                 vertices.push(x, y);
             }
+
+            pos = new Vector(vertices[0],  vertices[1]);
+            vX1 = new Vector(vertices[6] - vertices[0], vertices[7] - vertices[1]);
+            vX2 = new Vector(vertices[4] - vertices[2], vertices[5] - vertices[3]);
+            vY1 = new Vector(vertices[2] - vertices[0], vertices[3] - vertices[1]);
+
         }
 
 
-        const clear = () => {
+        function clear()
+        {
             ctx.fillStyle = "#000";
             ctx.fillRect(-hw, -hh, width, height);
         }
 
-        const renderQuads = () => {
+
+        function renderQuads()
+        {
 
             ctx.strokeStyle = "#f00";
             ctx.beginPath();
 
-            const { length } = vertices
+            const {length} = vertices
 
             ctx.moveTo(vertices[length - 2], vertices[length - 1]);
-            for (let i=0; i < length; i+=2)
+            for (let i = 0; i < length; i += 2)
             {
-                ctx.lineTo(vertices[i], vertices[i+1]);
+                ctx.lineTo(vertices[i], vertices[i + 1]);
             }
             ctx.stroke();
 
-
-
-            ctx.strokeStyle = "#00F";
+            ctx.strokeStyle = "#46f";
             ctx.beginPath();
             ctx.moveTo(bx, by);
             ctx.lineTo(bx + boxSize, by);
             ctx.lineTo(bx + boxSize, by + boxSize);
             ctx.lineTo(bx, by + boxSize);
             ctx.lineTo(bx, by);
+
+            ctx.moveTo(bx, by);
+            ctx.lineTo(bx + boxSize, by + boxSize);
+
+            ctx.moveTo(bx, by + boxSize);
+            ctx.lineTo(bx + boxSize, by);
+
             ctx.stroke();
+
+            ctx.strokeStyle = "#F00";
+            {
+                ctx.beginPath();
+                const p = interpolate(0,0);
+                ctx.moveTo(p.x,p.y)
+                for (let x = 0.1; x < 1; x += 0.1)
+                {
+                    const p = interpolate(x,x);
+
+                    ctx.lineTo(p.x, p.y);
+                }
+
+                ctx.stroke();
+            }
+            {
+                ctx.beginPath();
+                const p = interpolate(0,1);
+                ctx.moveTo(p.x,p.y)
+                for (let x = 0.1; x < 1; x += 0.1)
+                {
+                    const p = interpolate(x,1 - x);
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+            }
 
         }
 
 
-        const mainLoop = () =>{
+        function interpolate(x, y)
+        {
+            const vAxisStart = vX1.copy().scale(x).add(pos);
+            const vAxisEnd = vX2.copy().scale(x).add(pos).add(vY1);
 
-            const pos = new Vector(vertices[0],  vertices[1]);
-            const vX1 = new Vector(vertices[6] - vertices[0], vertices[7] - vertices[1]);
-            const vX2 = new Vector(vertices[4] - vertices[2], vertices[5] - vertices[3]);
-            const vY1 = new Vector(vertices[2] - vertices[0], vertices[3] - vertices[1]);
-            // const up = ...
+            return vAxisEnd.subtract(vAxisStart).scale(y).add(vAxisStart);
+        }
+
+        const mainLoop = () =>{
 
             clear();
             renderQuads();
 
-            const vAxisStart = vX1.copy().scale(mouseX).add(pos);
-            const vAxisEnd = vX2.copy().scale(mouseX).add(pos).add(vY1);
-
-
-            const transformed = vAxisEnd.subtract(vAxisStart).scale(mouseY).add(vAxisStart)
+            const transformed = interpolate(mouseX, mouseY);
 
             //console.log((mouseX - width/3 - 300)/boxSize, (100 - (mouseY - hh))/boxSize, "=>", transformed.x, transformed.y);
 
@@ -136,18 +177,32 @@ domready(
 
         randomQuad();
 
-        canvas.addEventListener("click", randomQuad, true);
-        canvas.addEventListener("mousemove", ev =>{
+        const updateCoords = ev =>{
 
             const rect = canvas.getBoundingClientRect();
-            const x = ev.clientX - rect.left;
-            const y = ev.clientY - rect.top;
+
+            let x,y;
+            if (ev.touches)
+            {
+                x = ev.touches[0].clientX - rect.left;
+                y = ev.touches[0].clientY - rect.top;
+            }
+            else
+            {
+                x = ev.clientX - rect.left;
+                y = ev.clientY - rect.top;
+            }
+
 
             // if the mouse is within the blue box, it's position goes from 0,0 to 1,1
             mouseX = (x - width/3 - bx)/boxSize;
             mouseY = (boxSize/2 - (y - hh))/boxSize;
 
-        }, true)
+        };
+
+        canvas.addEventListener("click", randomQuad, true);
+        canvas.addEventListener("mousemove", updateCoords, true)
+        canvas.addEventListener("touchmove", updateCoords, true)
 
         raf(mainLoop)
     }
