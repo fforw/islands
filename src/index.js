@@ -51,7 +51,7 @@ import { heightLimit } from "./heightLimit";
 const EFFECTS = true;
 const HEIGHT_MAP = true;
 
-const DETAIL = 2;
+const DETAIL = 12;
 const MAX_HEIGHT = 500;
 const QUARTER_HEIGHT = MAX_HEIGHT / 4;
 const NOISE_SCALE_1 = 0.003;
