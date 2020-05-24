@@ -22,7 +22,8 @@ module.exports = {
     mode: process.env.NODE_ENV,
     entry: {
         "main": "./src/index.js",
-        "test": "./src/test.js"
+        "test": "./src/test.js",
+        "height": "./src/test-height-limit.js"
     },
 
     devtool: "source-map",
@@ -50,6 +51,13 @@ module.exports = {
             chunks: ["vendors", "test"],
             template: "src/template.html",
             filename: "test.html"
+        }),
+
+        new HtmlWebpackPlugin({
+            inject: "body",
+            chunks: ["vendors", "height"],
+            template: "src/template.html",
+            filename: "height.html"
         }),
 
         new MiniCssExtractPlugin({

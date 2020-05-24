@@ -41,6 +41,7 @@ import { Sky } from "three/examples/jsm/objects/Sky.js";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import loadTexture from "./loadTexture";
+import { heightLimit } from "./heightLimit";
 
 
 const EFFECTS = true;
