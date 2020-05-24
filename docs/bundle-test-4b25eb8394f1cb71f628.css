@@ -10,7 +10,15 @@ body,
     margin: 0;
     padding: 0;
     overflow:hidden;
+    background: #000;
+    color: #ccc;
+}
+
+canvas
+{
+    margin: 0;
+    padding: 0;
 }
 
 
-/*# sourceMappingURL=bundle-main-e5c36730e2c79a15bbd6.css.map*/
+/*# sourceMappingURL=bundle-test-4b25eb8394f1cb71f628.css.map*/

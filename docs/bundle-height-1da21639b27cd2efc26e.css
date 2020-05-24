@@ -1,0 +1,24 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow:hidden;
+    background: #000;
+    color: #ccc;
+}
+
+canvas
+{
+    margin: 0;
+    padding: 0;
+}
+
+
+/*# sourceMappingURL=bundle-height-1da21639b27cd2efc26e.css.map*/
