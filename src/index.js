@@ -21,7 +21,9 @@ import {
     PlaneBufferGeometry,
     RepeatWrapping,
     Scene,
-    WebGLRenderer
+    WebGLRenderer,
+    InstancedBufferGeometry,
+    Object3D
 } from "three"
 
 import OrganicQuads, {
@@ -47,24 +49,24 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import loadTexture from "./loadTexture";
 import { heightLimit } from "./heightLimit";
 
+const TAU = Math.PI * 2;
 
 const EFFECTS = true;
-const HEIGHT_MAP = true;
+const HEIGHT_MAP = false;
 
-const DETAIL = 12;
-const MAX_HEIGHT = 500;
+// const DETAIL = 12;
+// const MAX_HEIGHT = 500;
+const DETAIL = 2;
+const MAX_HEIGHT = 50;
 const QUARTER_HEIGHT = MAX_HEIGHT / 4;
 const NOISE_SCALE_1 = 0.003;
 const NOISE_SCALE_2 = 0.07;
 const GROUND_NOISE_SCALE = 0.005;
 const NOISE_RATIO = 0.99;
-const CLIFF_THRESHOLD = 10;
+const CLIFF_THRESHOLD = 20;
 
 // size of the outer square around our big hexagon
 const SIZE = 1500;
-
-// distance from the center at which the ground becomes flat
-const FLAT_DISTANCE = 410;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -92,12 +94,12 @@ const CASE_NAMES = [
     "case-2",
     "case-3",
     "case-4",
-    "case-5",
+    "case-5-2",
     "case-6",
     "case-7",
     "case-8",
     "case-9",
-    "case-10",
+    "case-10-2",
     "case-11",
     "case-12",
     "case-13",
@@ -117,6 +119,16 @@ const GROUND_COLORS = {
     [FOREST]: [0.2, 0.5, 0.3],
     [STONE]: [0.5, 0.5, 0.5],
     [UNDEFINED]: [1, 0, 1]
+}
+
+const GROUND_ROUGHNESS = {
+    [WATER]: 0,
+    [SAND]: 1,
+    [GRASS]: 1,
+    [DIRT]: 1,
+    [FOREST]: 1,
+    [STONE]: 0.3,
+    [UNDEFINED]: 0
 }
 
 const WATER_LIMIT = 2;
@@ -334,29 +346,32 @@ function generateGround()
 
         const ground = heightMap[heightMapPos + h_ground];
 
-        if (ground !== STONE)
+        if (ground === UNDEFINED)
         {
-
             if (y0 < WATER_LIMIT)
             {
                 heightMap[heightMapPos + h_ground] = WATER;
             }
-            else if (y0 < SAND_LIMIT)
-            {
-                heightMap[heightMapPos + h_ground] = SAND;
-            }
+            // else if (y0 < SAND_LIMIT)
+            // {
+            //     heightMap[heightMapPos + h_ground] = SAND;
+            // }
+            // else
+            // {
+            //     const n = noise.noise2D(x0 * GROUND_NOISE_SCALE, z0 * GROUND_NOISE_SCALE);
+            //
+            //     if (y0 < FOREST_LIMIT)
+            //     {
+            //         heightMap[heightMapPos + h_ground] = n < 0.2 ? GRASS : FOREST;
+            //     }
+            //     else
+            //     {
+            //         heightMap[heightMapPos + h_ground] = n < 0.2 ? FOREST : GRASS;
+            //     }
+            // }
             else
             {
-                const n = noise.noise2D(x0 * GROUND_NOISE_SCALE, z0 * GROUND_NOISE_SCALE);
-
-                if (y0 < FOREST_LIMIT)
-                {
-                    heightMap[heightMapPos + h_ground] = n < 0.2 ? GRASS : FOREST;
-                }
-                else
-                {
-                    heightMap[heightMapPos + h_ground] = n < 0.2 ? FOREST : GRASS;
-                }
+                heightMap[heightMapPos + h_ground] = GRASS;
             }
         }
 
@@ -439,16 +454,10 @@ function addHeightMap()
     const normals = [];
     const colors = [];
 
-    const size = 20;
-    const segments = 10;
-
-    const halfSize = size / 2;
-    const segmentSize = size / segments;
-
     // generate vertices, normals and color data for a simple grid geometry
-    const {graph, tiles, config} = organicQuads;
+    const { graph, tiles } = organicQuads;
 
-    const {length} = tiles;
+    const { length } = tiles;
 
     console.log("Height map for ", length / t_size, " tiles");
 
@@ -507,8 +516,6 @@ function addHeightMap()
         const heightIndex1 = n1 * heightIndexFactor;
         const heightIndex2 = n2 * heightIndexFactor;
         const heightIndex3 = n3 * heightIndexFactor;
-
-        const walkable = tileData[tileDataIndex + td_walkable];
 
         const x0 = graph[n0 + g_x];
         const y0 = tileData[tileDataIndex + td_cut0] === -1 ?
@@ -744,11 +751,12 @@ function init()
                 waterColor: "#000e1e",
                 distortionScale: 2.5,
                 clipBias: 0.0001,
-                fog: true
+                fog: true,
+                side: DoubleSide
             }
         );
         water.rotation.x = -Math.PI / 2;
-        scene.add(water);
+        //scene.add(water);
     }
     else
     {
@@ -788,7 +796,8 @@ function init()
     }
 
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.maxPolarAngle = Math.PI * 0.45;
+    //controls.maxPolarAngle = Math.PI * 0.45;
+    controls.maxPolarAngle = Math.PI;
     controls.target.set(0, 0, 0);
     controls.minDistance = 0.0;
     controls.maxDistance = 1500.0;
@@ -835,85 +844,77 @@ function init()
 let materialCompile = 0;
 let materialGenerate = 0;
 
+const dummy = new Object3D();
 
 function addMarchingSquareObjects(marchingSquaresArray)
 {
-
-    let material;
     for (let i = WATER + 1; i < NUM_MATERIALS; i++)
     {
-        material = null;
-        const attrsArray = createMarchingSquares(i);
+
+        const [attrsArray, positionsArray] = createMarchingSquares(i);
         for (let j = 1; j < attrsArray.length; j++)
         {
             const attrs = attrsArray[j];
-            if (attrs)
+            const positions = positionsArray[j];
+            if (attrs && positions)
             {
-                if (!material)
-                {
-                    //console.log("Create material ", MATERIAL_NAMES[i], "#", materialGenerate++)
+                //const material = materials[i].clone();
+                const material = new MeshStandardMaterial({
+                    side: DoubleSide,
+                    color: new Color(... GROUND_COLORS[i]),
+                    roughness: GROUND_ROUGHNESS[i]
+                });
 
-                    material = new MeshStandardMaterial({
-                        color: new Color(... GROUND_COLORS[i]),
-                        side: BackSide,
-                        roughness: 0.5
-                    });
+                // language=GLSL
+                const colorParsChunk = `
+                    attribute vec3 pos;
+                    attribute vec3 up;
+                    attribute vec3 vX1;
+                    attribute vec3 vX2;
+                    attribute vec3 vY1;
+                    #include <common>
+                `;
 
+                // language=GLSL
+                const instanceColorChunk = `
 
-                    // language=GLSL
-                    const colorParsChunk = `
-                        attribute vec3 pos;
-                        attribute vec3 up;
-                        attribute vec3 vX1;
-                        attribute vec3 vX2;
-                        attribute vec3 vY1;
-                        #include <common>
-                    `;
+                    vec3 vAxisStart = pos + position.x * vX1;
+                    vec3 vAxisEnd = pos + vY1 + position.x * vX2;
 
-                    // language=GLSL
-                    const instanceColorChunk = `
+                    vec3 transformed = vAxisStart + ((vAxisEnd - vAxisStart) * position.z) + (position.y * up);
 
-                        vec3 vAxisStart = pos + position.x * vX1;
-                        vec3 vAxisEnd = pos + vY1 + position.x * vX2;
-                        
-                        vec3 transformed = vAxisStart + (vAxisEnd - vAxisStart) * position.y + position.z * up;
+                    vec3 vNormAxisStart = vNormal.x * vX1;
+                    vec3 vNormAxisEnd = vY1 + vNormal.x * vX2;
 
-                        vec3 vNormAxisStart = vNormal.x * vX1;
-                        vec3 vNormAxisEnd = vY1 + vNormal.x * vX2;
-                        
-                        vNormal = normalize(vNormAxisStart + (vNormAxisEnd - vNormAxisStart) * vNormal.y  + vNormal.z * up);
-                        
-                    `
+                    vNormal = normalize(vX1 * vNormal.x + vY1 * vNormal.y  + vNormal.z * up);
+                `
 
-                    // const vAxisStart = vX1.copy().scale(mouseX).add(pos);
-                    // const vAxisEnd = vX2.copy().scale(mouseX).add(pos).add(vY1);
-                    // const transformed = vAxisEnd.subtract(vAxisStart).scale(mouseY).add(vAxisStart)
+                material.onBeforeCompile = shader => {
 
+                    const {vertexShader} = shader;
 
-                    material.onBeforeCompile = shader => {
+                    shader.vertexShader = vertexShader
+                        .replace("#include <common>", colorParsChunk)
+                        .replace("#include <begin_vertex>", instanceColorChunk);
 
-                        const { vertexShader } = shader;
-
-                        shader.vertexShader = vertexShader
-                            .replace( '#include <common>', colorParsChunk )
-                            .replace( '#include <begin_vertex>', instanceColorChunk );
-
-                        //console.log("Compiling material ", MATERIAL_NAMES[i], "#", materialCompile++);
-
-                        //console.log("VERT\n", shader.vertexShader)
-                        //console.log("FRAG\n", shader.fragmentShader)
-                        //console.log(shader.uniforms)
-
-                    };
-                }
+                };
 
                 const count = attrs.length / ms_attrs_size + 1;
-                const geometry = marchingSquaresArray[j];
+                const geo = marchingSquaresArray[j];
+
+                if (!geo)
+                {
+                    throw new Error("No ms tiles for case " + j);
+                }
 
                 const positionBuffer = new InterleavedBuffer(
                     new Float32Array(attrs),
                     ms_attrs_size
                 );
+
+                const geometry = new InstancedBufferGeometry();
+
+                BufferGeometry.prototype.copy.call(geometry, geo);
 
                 geometry.setAttribute("pos", new InterleavedBufferAttribute(positionBuffer, 3, 0, false));
                 geometry.setAttribute("up", new InterleavedBufferAttribute(positionBuffer, 3, 3, false));
@@ -924,6 +925,22 @@ function addMarchingSquareObjects(marchingSquaresArray)
                 //console.log("Instance count for ", MATERIAL_NAMES[i], "/", CASE_NAMES[j], " = ", count, geometry);
 
                 const mesh = new InstancedMesh(geometry, material, count);
+                for (let i = 0; i < count; i++)
+                {
+                    const idx = i * 3;
+                    const x = positions[idx]
+                    const y = positions[idx + 1]
+                    const z = positions[idx + 2]
+
+                    dummy.position.set(x, y, z);
+                    //dummy.rotation.x = TAU/4;
+                    dummy.updateMatrix();
+
+                    mesh.setMatrixAt(i, dummy.matrix)
+                }
+
+                mesh.needsUpdate = true;
+
                 scene.add(mesh);
             }
         }
@@ -943,6 +960,7 @@ function createMarchingSquares(ground)
     const {length} = tiles;
 
     const attrsArray = new Array(marchingSquaresArray.length);
+    const positionsArray = new Array(marchingSquaresArray.length);
 
     let tileDataIndex = 0;
     for (let i = 0; i < length; i += t_size)
@@ -958,6 +976,10 @@ function createMarchingSquares(ground)
         const heightIndex1 = n1 * heightIndexFactor;
         const heightIndex2 = n2 * heightIndexFactor;
         const heightIndex3 = n3 * heightIndexFactor;
+
+        const centroidX = tileData[tileDataIndex + td_cx];
+        const centroidY = heightFn(tileData[tileDataIndex + td_cx], tileData[tileDataIndex + td_cy]);
+        const centroidZ = tileData[tileDataIndex + td_cy];
 
         const x0 = graph[n0 + g_x];
         const y0 = tileData[tileDataIndex + td_cut0] === -1 ?
@@ -1008,9 +1030,9 @@ function createMarchingSquares(ground)
         const n1z = ax * cy - ay * cx;
 
         // average with world up and renormalize
-        let nx = (n0x + n1x) / 3;
-        let ny = (n0y + n1y + 1) / 3;
-        let nz = (n0z + n1z) / 3;
+        let nx = (n0x + n1x) / 2;
+        let ny = (n0y + n1y) / 2;
+        let nz = (n0z + n1z) / 2;
 
         const f = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
         nx *= f;
@@ -1021,15 +1043,18 @@ function createMarchingSquares(ground)
         const g2 = heightMap[heightIndex1 + h_ground];
         const g4 = heightMap[heightIndex2 + h_ground];
         const g8 = heightMap[heightIndex3 + h_ground];
+
         let tileCase = (
-            g1 === ground ? 1 : 0 +
-            g2 === ground ? 2 : 0 +
-            g4 === ground ? 4 : 0 +
-            g8 === ground ? 8 : 0
-        )
+            ( g1 === ground ? 1 : 0) +
+            ( g2 === ground ? 2 : 0) +
+            ( g4 === ground ? 4 : 0) +
+            ( g8 === ground ? 8 : 0)
+        );
 
         if (tileCase !== 0)
         {
+            //tileCase = 15;
+
             // fix multi-color gaps
             if (tileCase === 1 && g2 !== g8)
             {
@@ -1055,24 +1080,33 @@ function createMarchingSquares(ground)
                 attrsArray[tileCase] = attrs;
             }
 
+            let positions = positionsArray[tileCase];
+            if (!positions)
+            {
+                positions = [];
+                positionsArray[tileCase] = positions;
+            }
+
+            positions.push(centroidX,centroidY,centroidZ);
+
             attrs.push(
-                // pos
-                x0, y0, z0,
+                // ~~pos~~
+                x0 - centroidX, y0 - centroidY, z0 - centroidZ,
                 // up
-                nx, ny, nz,
+                nx,      ny,      nz,
                 // vX1
                 x3 - x0, y3 - y0, z3 - z0,
                 // vX2
                 x2 - x1, y2 - y1, z2 - z1,
                 // vY1
-                x1 - x0, y1 - y0, z1 - z0
+                x1 - x0, y1 - y0, z1 - z0,
             )
         }
 
         tileDataIndex += td_size;
     }
 
-    return attrsArray;
+    return [attrsArray, positionsArray];
 }
 
 
@@ -1099,7 +1133,7 @@ function mainLoop()
     render();
     //stats.update();
 
-    skyParameters.inclination = 0.1 + Math.sin(inclinationCount += 0.001) * 0.3;
+    //skyParameters.inclination = 0.1 + Math.sin(inclinationCount += 0.001) * 0.3;
 
     updateSun();
 
