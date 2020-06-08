@@ -22,8 +22,10 @@ module.exports = {
     mode: process.env.NODE_ENV,
     entry: {
         "main": "./src/index.js",
-        "test": "./src/test.js",
-        "height": "./src/test-height-limit.js"
+        "editor": "./src/editor/editor.js",
+        "test": "./src/test-projection.js",
+        "height": "./src/test-height-limit.js",
+        "thumb": "./src/test-thumb.js"
     },
 
     devtool: "source-map",
@@ -60,6 +62,20 @@ module.exports = {
             filename: "height.html"
         }),
 
+        new HtmlWebpackPlugin({
+            inject: "body",
+            chunks: ["vendors", "editor"],
+            template: "src/template.html",
+            filename: "editor.html"
+        }),
+
+        new HtmlWebpackPlugin({
+            inject: "body",
+            chunks: ["vendors", "thumb"],
+            template: "src/template.html",
+            filename: "thumb.html"
+        }),
+
         new MiniCssExtractPlugin({
             filename: "bundle-[name]-[chunkhash].css",
             chunkFilename: "bundle-[id]-[chunkhash].css"
@@ -76,6 +92,12 @@ module.exports = {
                 patterns: [
                     {
                         from: "assets/**/*"
+                    },
+                    {
+                        from: "css/**/*"
+                    },
+                    {
+                        from: "webfonts/**/*"
                     }
                 ]
             }

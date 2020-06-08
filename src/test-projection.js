@@ -3,10 +3,9 @@ import raf from "raf"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
 import { Vector } from "@fforw/organic-quads";
+import { TAU, PHI } from "./constants";
 
 
-const PHI = (1 + Math.sqrt(5)) / 2;
-const TAU = Math.PI * 2;
 
 const config = {
     width: 0,

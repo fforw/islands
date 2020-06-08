@@ -1,10 +1,10 @@
-export function heightLimit(x)
+export function heightLimit(x, w = 0)
 {
     const beach = 0.05;
     const beachSquared = beach * beach;
 
-    const mountain = 0.6;
-    const mountain_mid = 0.5;
+    const mountain = w ? 0.4 : 0.6;
+    const mountain_mid = w ? 0.75 : 0.5;
 
     if (x < beach)
     {

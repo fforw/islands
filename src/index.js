@@ -1,29 +1,25 @@
 import raf from "raf"
+import Prando from "prando";
 import SimplexNoise from "simplex-noise"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
 import {
-    BackSide,
+    BufferAttribute,
     BufferGeometry,
-    Color,
     CubeCamera,
     DirectionalLight,
     DoubleSide,
     Float32BufferAttribute,
     FrontSide,
-    InstancedMesh,
-    InterleavedBuffer,
-    InterleavedBufferAttribute,
-    LinearMipmapLinearFilter,
     Mesh,
     MeshStandardMaterial,
+    Object3D,
     PerspectiveCamera,
     PlaneBufferGeometry,
     RepeatWrapping,
     Scene,
-    WebGLRenderer,
-    InstancedBufferGeometry,
-    Object3D
+    Vector3,
+    WebGLRenderer
 } from "three"
 
 import OrganicQuads, {
@@ -48,91 +44,34 @@ import { Sky } from "three/examples/jsm/objects/Sky.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import loadTexture from "./loadTexture";
 import { heightLimit } from "./heightLimit";
+import { CASE_NAMES, FOREST, GRASS, GROUND_COLORS, MATERIAL_NAMES, SAND, STONE, UNDEFINED, WATER } from "./constants";
+import { dump } from "./util/dump";
+
 
 const TAU = Math.PI * 2;
 
 const EFFECTS = true;
 const HEIGHT_MAP = false;
 
-// const DETAIL = 12;
-// const MAX_HEIGHT = 500;
-const DETAIL = 2;
-const MAX_HEIGHT = 50;
+const DETAIL = 15;
+const MAX_HEIGHT = 300;
 const QUARTER_HEIGHT = MAX_HEIGHT / 4;
 const NOISE_SCALE_1 = 0.003;
 const NOISE_SCALE_2 = 0.07;
+const NOISE_SCALE_3 = 0.0007;
 const GROUND_NOISE_SCALE = 0.005;
 const NOISE_RATIO = 0.99;
-const CLIFF_THRESHOLD = 20;
+const CLIFF_THRESHOLD = 10;
 
 // size of the outer square around our big hexagon
 const SIZE = 1500;
 
 //////////////////////////////////////////////////////////////////////
 
-const WATER = 0;
-const SAND = 1;
-const GRASS = 2;
-const DIRT = 3;
-const FOREST = 4;
-const STONE = 5;
-const UNDEFINED = 6;
 const NUM_MATERIALS = 7;
 
-const MATERIAL_NAMES = [
-    "Water", // WATER
-    "Sand", // SAND
-    "Grass", // GRASS
-    "Dirt", // DIRT
-    "Forest", // FOREST
-    "Stone", // STONE
-];
-
-const CASE_NAMES = [
-    null,
-    "case-1",
-    "case-2",
-    "case-3",
-    "case-4",
-    "case-5-2",
-    "case-6",
-    "case-7",
-    "case-8",
-    "case-9",
-    "case-10-2",
-    "case-11",
-    "case-12",
-    "case-13",
-    "case-14",
-    "case-15",
-    "case-m1",
-    "case-m2",
-    "case-m3",
-    "case-m4"
-];
-
-const GROUND_COLORS = {
-    [WATER]: [0, 0.4, 0.8],
-    [SAND]: [0.8, 0.8, 0],
-    [GRASS]: [0, 0.7, 0],
-    [DIRT]: [0.5, 0.3, 0.1],
-    [FOREST]: [0.2, 0.5, 0.3],
-    [STONE]: [0.5, 0.5, 0.5],
-    [UNDEFINED]: [1, 0, 1]
-}
-
-const GROUND_ROUGHNESS = {
-    [WATER]: 0,
-    [SAND]: 1,
-    [GRASS]: 1,
-    [DIRT]: 1,
-    [FOREST]: 1,
-    [STONE]: 0.3,
-    [UNDEFINED]: 0
-}
-
 const WATER_LIMIT = 2;
-const SAND_LIMIT = 5.5;
+const SAND_LIMIT = 5.7;
 const FOREST_LIMIT = 60;
 
 let container, stats;
@@ -151,7 +90,6 @@ const td_size = 7;
 let tileData;
 let heightMap;
 let materials;
-
 
 function updateCentroids()
 {
@@ -182,13 +120,18 @@ function updateCentroids()
 
 let organicQuads, envMap;
 
+const nOffset = Math.random() * 10;
+const mOffset = Math.random() * 10;
 
 function heightFn(x0, z0)
 {
     const distance = Math.sqrt(x0 * x0 + z0 * z0);
-    const limit = heightLimit(1 - distance / (SIZE / 2));
 
-    return Math.max(0, (QUARTER_HEIGHT + (noise.noise2D(x0 * NOISE_SCALE_1, z0 * NOISE_SCALE_1) * NOISE_RATIO + noise.noise2D(z0 * NOISE_SCALE_2, x0 * NOISE_SCALE_2) * (1 - NOISE_RATIO)) * QUARTER_HEIGHT) * limit);
+    const w = noise.noise2D(x0 * NOISE_SCALE_3, mOffset + z0 * NOISE_SCALE_3) < 0.1 ? 0 : 0.6
+
+    const limit = heightLimit(1 - distance / (SIZE / 2), w);
+
+    return Math.max(0, (QUARTER_HEIGHT + (noise.noise2D(nOffset + x0 * NOISE_SCALE_1, z0 * NOISE_SCALE_1) * NOISE_RATIO + noise.noise2D(z0 * NOISE_SCALE_2, x0 * NOISE_SCALE_2 ) * (1 - NOISE_RATIO) + w) * QUARTER_HEIGHT) * limit);
 }
 
 
@@ -203,6 +146,10 @@ function cutCliffs()
     const {length} = tiles;
 
     const tileDataFactor = td_size / t_size;
+
+    const tileCuts = [];
+
+    const cutNodes = new Set();
 
     for (let i = 0; i < length; i += t_size)
     {
@@ -252,38 +199,130 @@ function cutCliffs()
             {
                 if (cutMask & (1 << j))
                 {
-                    const heightMapIndex0 = tiles[i + t_n0 + j] * heightIndexFactor;
-                    const heightMapIndex1 = (j === 3 ? tiles[i + t_n0] : tiles[i + t_n0 + j + 1]) * heightIndexFactor;
+                    const cut0 = j;
+                    const cut1 = j === 3 ? 0 : j + 1;
 
-                    const cut0 = td_cut0 + j;
-                    const cut1 = j === 3 ? td_cut0 : td_cut0 + j + 1;
+                    const heightMapIndex0 = tiles[i + t_n0 + cut0] * heightIndexFactor;
+                    const heightMapIndex1 = tiles[i + t_n0 + cut1] * heightIndexFactor;
 
-                    const edgeBefore = j === 0 ? 3 : j - 1;
-                    const edgeAfter = j === 3 ? 0 : j + 1;
+                    const height = tmpHeight[0];
 
-                    const heightOnQuadBefore = tmpHeight[1 + edgeBefore];
-                    const heightOnQuadAfter = tmpHeight[1 + edgeAfter];
-                    const height0 = heightOnQuadBefore >= 0 ? (heightOnQuadBefore + tmpHeight[0]) / 2 : tmpHeight[0];
-                    const height1 = heightOnQuadAfter >= 0 ? (tmpHeight[0] + heightOnQuadAfter) / 2 : tmpHeight[0];
+                    const node0 = tiles[i + t_n0 + cut0];
+                    const node1 = tiles[i + t_n0 + cut1];
 
-                    tileData[tileDataIndex + cut0] = height0;
-                    tileData[tileDataIndex + cut1] = height1;
-                    heightMap[heightMapIndex0 + h_ground] = STONE;
-                    heightMap[heightMapIndex1 + h_ground] = STONE;
+                    cutNodes.add(node0)
+                    cutNodes.add(node1)
 
-                    // cut our connection to the other tile
+                    tileData[tileDataIndex + td_cut0 + cut0] = height;
+                    tileData[tileDataIndex + td_cut0 + cut1] = height;
+
+                    const rnd = Math.random();
+                    if (rnd < 0.2)
+                    {
+                        heightMap[heightMapIndex0 + h_ground] = STONE;
+                    }
+                    else if (rnd < 0.4)
+                    {
+                        heightMap[heightMapIndex1 + h_ground] = STONE;
+                    }
+
+
+                    const other = tiles[i + t_tile0 + j];
+                    // mark our connection to the other tile as cut
                     tiles[i + t_tile0 + j] = -1;
+
+                    let usInOther = -1;
+                    for (let k = 0; k < 4; k++)
+                    {
+                        if (
+                            tiles[other + t_tile0 + k] === i &&
+                            tileData[other * tileDataFactor + td_cut0 + k] === -1)
+                        {
+                            usInOther = i;
+                            break;
+                        }
+                    }
+                    if (usInOther !== -1)
+                    {
+                        tileCuts.push(0, i, other, cut0, cut1);
+                    }
+                }
+            }
+
+
+            for (let j = 0; j < 4; j++)
+            {
+                if (!(cutMask & (1 << j)))
+                {
+                    const prev = j === 0 ? 3 : j - 1;
+                    const next = j === 3 ? 0 : j + 1;
+
+                    const prevIsCut = cutMask & (1 << prev);
+                    const nextIsCut = cutMask & (1 << next);
+
+                    const other = tiles[i + t_tile0 + j];
+
+                    if (prevIsCut || nextIsCut)
+                    {
+                        if (prevIsCut && nextIsCut)
+                        {
+                            // full cut
+                            tileCuts.push(0, i, other, j, next);
+                        }
+                        else if (prevIsCut)
+                        {
+                            // triangle with two points on prev
+                            tileCuts.push(2, i, other, j, next);
+                        }
+                        else
+                        {
+                            // triangle with two points on next
+                            tileCuts.push(1, i, other, j, next);
+                        }
+                    }
                 }
             }
         }
     }
+
+    for (let cut of cutNodes)
+    {
+
+        for (let i = 0; i < length; i += t_size)
+        {
+            for (let j = 0; j < 4 ; j++)
+            {
+                const node = tiles[i + t_n0 + j];
+                if (node === cut)
+                {
+                    const tileDataIndex = i * tileDataFactor;
+
+                    if (tileData[tileDataIndex + td_cut0 + j] === -1)
+                    {
+                        tileData[tileDataIndex + td_cut0 + j] = heightFn(tileData[tileDataIndex + td_cx], tileData[tileDataIndex + td_cy])
+                    }
+                }
+            }
+        }
+    }
+
+
+    return tileCuts;
 }
 
+const tc_case = 0;
+const tc_tile0 = 1;
+const tc_tile1 = 2;
+const tc_cut0 = 3;
+const tc_cut1 = 4;
+const tc_size = 5;
 
 const h_height = 0;
 const h_ground = 1;
+const h_cuts = 2;
 const h_size = 3;
 
+let tileCuts;
 
 function createScene()
 {
@@ -321,7 +360,10 @@ function createScene()
 
     tileData = new Float64Array((organicQuads.tiles.length / t_size) * td_size);
     updateCentroids()
-    cutCliffs()
+    tileCuts = cutCliffs()
+
+    console.log({tileCuts: group(tileCuts, tc_size)})
+
     testWalkability();
     generateGround();
 
@@ -352,26 +394,22 @@ function generateGround()
             {
                 heightMap[heightMapPos + h_ground] = WATER;
             }
-            // else if (y0 < SAND_LIMIT)
-            // {
-            //     heightMap[heightMapPos + h_ground] = SAND;
-            // }
-            // else
-            // {
-            //     const n = noise.noise2D(x0 * GROUND_NOISE_SCALE, z0 * GROUND_NOISE_SCALE);
-            //
-            //     if (y0 < FOREST_LIMIT)
-            //     {
-            //         heightMap[heightMapPos + h_ground] = n < 0.2 ? GRASS : FOREST;
-            //     }
-            //     else
-            //     {
-            //         heightMap[heightMapPos + h_ground] = n < 0.2 ? FOREST : GRASS;
-            //     }
-            // }
+            else if (y0 < SAND_LIMIT)
+            {
+                heightMap[heightMapPos + h_ground] = SAND;
+            }
             else
             {
-                heightMap[heightMapPos + h_ground] = GRASS;
+                const n = noise.noise2D(x0 * GROUND_NOISE_SCALE, z0 * GROUND_NOISE_SCALE);
+
+                if (y0 < FOREST_LIMIT)
+                {
+                    heightMap[heightMapPos + h_ground] = n < 0.2 ? GRASS : FOREST;
+                }
+                else
+                {
+                    heightMap[heightMapPos + h_ground] = n < 0.2 ? FOREST : GRASS;
+                }
             }
         }
 
@@ -432,7 +470,9 @@ function walkRecursive(tileIndex, visited)
 }
 
 
-const noise = new SimplexNoise();
+const rng = new Prando("TEST")
+
+const noise = new SimplexNoise(() => rng.next());
 
 
 function checkNaN(value, msg)
@@ -671,8 +711,8 @@ function addHeightMap()
 
 const skyParameters = {
     distance: 1000,
-    inclination: 0.05,
-    azimuth: 0.25
+    inclination: 0.1,
+    azimuth: 0.1
 };
 
 
@@ -714,6 +754,7 @@ function init()
     renderer = new WebGLRenderer();
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
+    
     container.appendChild(renderer.domElement);
 
     //
@@ -729,8 +770,8 @@ function init()
     scene.add(light);
 
     cubeCamera = new CubeCamera(0.2, 1, 512);
-    cubeCamera.renderTarget.texture.generateMipmaps = true;
-    cubeCamera.renderTarget.texture.minFilter = LinearMipmapLinearFilter;
+    // cubeCamera.renderTarget.texture.generateMipmaps = true;
+    // cubeCamera.renderTarget.texture.minFilter = LinearMipmapLinearFilter;
 
     scene.background = cubeCamera.renderTarget;
 
@@ -751,12 +792,11 @@ function init()
                 waterColor: "#000e1e",
                 distortionScale: 2.5,
                 clipBias: 0.0001,
-                fog: true,
-                side: DoubleSide
+                fog: true
             }
         );
         water.rotation.x = -Math.PI / 2;
-        //scene.add(water);
+        scene.add(water);
     }
     else
     {
@@ -769,7 +809,7 @@ function init()
 
         const mesh = new Mesh(waterGeometry, material);
         mesh.rotation.x = -Math.PI / 2;
-        scene.add(mesh)
+        //scene.add(mesh)
     }
 
     // Skybox
@@ -778,13 +818,12 @@ function init()
     {
         sky = new Sky();
 
-        const uniforms = sky.material.uniforms;
 
-        uniforms["turbidity"].value = 5;
-        uniforms["rayleigh"].value = 1.5;
-        uniforms["luminance"].value = 1;
-        uniforms["mieCoefficient"].value = 0.05;
-        uniforms["mieDirectionalG"].value = 0.9;
+        // uniforms["turbidity"].value = 5;
+        // uniforms["rayleigh"].value = 1.2;
+        // uniforms["luminance"].value = 1;
+        // uniforms["mieCoefficient"].value = 0.05;
+        // uniforms["mieDirectionalG"].value = 0.9;
 
         envMap = cubeCamera.renderTarget.texture
 
@@ -848,120 +887,262 @@ const dummy = new Object3D();
 
 function addMarchingSquareObjects(marchingSquaresArray)
 {
-    for (let i = WATER + 1; i < NUM_MATERIALS; i++)
-    {
 
-        const [attrsArray, positionsArray] = createMarchingSquares(i);
-        for (let j = 1; j < attrsArray.length; j++)
+    const vertexMap = new Map();
+    let vertexCount = 0;
+
+    const position = [];
+    const uv = [];
+    const normal = [];
+
+    const insert = (x,y,z, nx, ny, nz, u, v) => {
+
+
+        x = Math.round(x*16)/16;
+        y = Math.round(y*16)/16;
+        z = Math.round(z*16)/16;
+
+        nx = Math.round(nx*1024)/1024;
+        ny = Math.round(ny*1024)/1024;
+        nz = Math.round(nz*1024)/1024;
+
+        u = Math.round(u*4096)/4096;
+        v = Math.round( v*4096)/4096;
+
+        // const key = ((x*10)|0) + "," + ((y*10)|0) + "," + ((z*10)|0) + "/" +
+        //             ((nx*e)|0) + ":" + ((ny*1000)|0) + ":" + ((nz*1000)|0) + "/" +
+        //             ((u*4096)|0) + ":" + ((v*4096)|0);
+
+        const key = x + "," + y + "," + z + "/" + nx + "," + ny + "," + nz + "/" + u  + "," + v;
+
+        const index = vertexMap.get(key);
+        if (index === undefined)
         {
-            const attrs = attrsArray[j];
-            const positions = positionsArray[j];
-            if (attrs && positions)
-            {
-                //const material = materials[i].clone();
-                const material = new MeshStandardMaterial({
-                    side: DoubleSide,
-                    color: new Color(... GROUND_COLORS[i]),
-                    roughness: GROUND_ROUGHNESS[i]
-                });
+            const newIndex = vertexCount++;
+            vertexMap.set(key, newIndex);
 
-                // language=GLSL
-                const colorParsChunk = `
-                    attribute vec3 pos;
-                    attribute vec3 up;
-                    attribute vec3 vX1;
-                    attribute vec3 vX2;
-                    attribute vec3 vY1;
-                    #include <common>
-                `;
+            position.push(x,y,z);
+            uv.push(u,v);
+            normal.push(nx,ny,nz);
 
-                // language=GLSL
-                const instanceColorChunk = `
+            return newIndex;
+        }
+        return index;
+    }
 
-                    vec3 vAxisStart = pos + position.x * vX1;
-                    vec3 vAxisEnd = pos + vY1 + position.x * vX2;
 
-                    vec3 transformed = vAxisStart + ((vAxisEnd - vAxisStart) * position.z) + (position.y * up);
+    const facesByMaterial = new Array(NUM_MATERIALS);
 
-                    vec3 vNormAxisStart = vNormal.x * vX1;
-                    vec3 vNormAxisEnd = vY1 + vNormal.x * vX2;
-
-                    vNormal = normalize(vX1 * vNormal.x + vY1 * vNormal.y  + vNormal.z * up);
-                `
-
-                material.onBeforeCompile = shader => {
-
-                    const {vertexShader} = shader;
-
-                    shader.vertexShader = vertexShader
-                        .replace("#include <common>", colorParsChunk)
-                        .replace("#include <begin_vertex>", instanceColorChunk);
-
-                };
-
-                const count = attrs.length / ms_attrs_size + 1;
-                const geo = marchingSquaresArray[j];
-
-                if (!geo)
-                {
-                    throw new Error("No ms tiles for case " + j);
-                }
-
-                const positionBuffer = new InterleavedBuffer(
-                    new Float32Array(attrs),
-                    ms_attrs_size
-                );
-
-                const geometry = new InstancedBufferGeometry();
-
-                BufferGeometry.prototype.copy.call(geometry, geo);
-
-                geometry.setAttribute("pos", new InterleavedBufferAttribute(positionBuffer, 3, 0, false));
-                geometry.setAttribute("up", new InterleavedBufferAttribute(positionBuffer, 3, 3, false));
-                geometry.setAttribute("vX1", new InterleavedBufferAttribute(positionBuffer, 3, 6, false));
-                geometry.setAttribute("vX2", new InterleavedBufferAttribute(positionBuffer, 3, 9, false));
-                geometry.setAttribute("vY1", new InterleavedBufferAttribute(positionBuffer, 3, 12, false));
-
-                //console.log("Instance count for ", MATERIAL_NAMES[i], "/", CASE_NAMES[j], " = ", count, geometry);
-
-                const mesh = new InstancedMesh(geometry, material, count);
-                for (let i = 0; i < count; i++)
-                {
-                    const idx = i * 3;
-                    const x = positions[idx]
-                    const y = positions[idx + 1]
-                    const z = positions[idx + 2]
-
-                    dummy.position.set(x, y, z);
-                    //dummy.rotation.x = TAU/4;
-                    dummy.updateMatrix();
-
-                    mesh.setMatrixAt(i, dummy.matrix)
-                }
-
-                mesh.needsUpdate = true;
-
-                scene.add(mesh);
-            }
+    for (let currGround = WATER + 1; currGround < NUM_MATERIALS; currGround++)
+    {
+        const array = createMarchingSquares(currGround, insert, marchingSquaresArray);
+        if (array.length)
+        {
+            facesByMaterial[currGround] = array;
         }
     }
-}
 
+    const { graph, tiles } = organicQuads;
+
+    let faces = facesByMaterial[STONE];
+    if (!faces)
+    {
+        faces = facesByMaterial[STONE] = [];
+    }
+
+    let tileDataIndex = 0;
+    for (let i = 0; i < tileCuts.length; i += tc_size)
+    {
+        const cutCase = tileCuts[i + tc_case];
+        const tileA = tileCuts[i + tc_tile0];
+        const tileB = tileCuts[i + tc_tile1];
+        const cut0 = tileCuts[i + tc_cut0];
+        const cut1 = tileCuts[i + tc_cut1];
+
+        const tileDataIndexA = tileA * tileDataFactor;
+        const tileDataIndexB = tileB * tileDataFactor;
+
+        let otherCut0 = -1, otherCut1 = -1
+
+        let node0 = tiles[tileA + t_n0 + cut0];
+        let node1 = tiles[tileA + t_n0 + cut1];
+
+        for (let k = 0; k < 4; k++)
+        {
+            if (tiles[tileB + t_n0 + k] === node0)
+            {
+                otherCut0 = k;
+                if (otherCut1 !== -1)
+                {
+                    break;
+                }
+            }
+            else if (tiles[tileB + t_n0 + k] === node1)
+            {
+                otherCut1 = k;
+                if (otherCut0 !== -1)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (otherCut0 !== -1 && otherCut1 !== -1)
+        {
+            const x0 = graph[node0 + g_x];
+            const y0 = tileData[tileDataIndexA + td_cut0 + cut0]
+            const z0 = graph[node0 + g_y];
+
+            const x1 = graph[node1 + g_x];
+            const y1 = tileData[tileDataIndexA + td_cut0 + cut1]
+            const z1 = graph[node1 + g_y];
+
+            const x3 = x0;
+            const y3 = tileData[tileDataIndexB + td_cut0 + otherCut0]
+            const z3 = z0;
+
+            const x2 = x1;
+            const y2 = tileData[tileDataIndexB + td_cut0 + otherCut1]
+            const z2 = z1;
+
+
+            switch(cutCase)
+            {
+                case 0:
+                {
+                    const ax = (x0 - x1);
+                    const ay = (y0 - y1);
+                    const az = (z0 - z1);
+                    const bx = (x2 - x1);
+                    const by = (y2 - y1);
+                    const bz = (z2 - z1);
+
+                    // normal vector based on points 0, 1 and 2
+                    const nx = ay * bz - az * by;
+                    const ny = az * bx - ax * bz;
+                    const nz = ax * by - ay * bx;
+
+                    const indexA = insert(x0,y0,z0, nx,ny,nz, 0,0);
+                    const indexB = insert(x1,y1,z1, nx,ny,nz, 0,1);
+                    const indexC = insert(x2,y2,z2, nx,ny,nz, 1,1);
+                    const indexD = insert(x3,y3,z3, nx,ny,nz, 1,0);
+
+
+                    faces.push(indexB, indexA, indexC)
+                    faces.push(indexC, indexA, indexD)
+                    break;
+                }
+                case 1:
+                {
+                    const ax = (x0 - x1);
+                    const ay = (y0 - y1);
+                    const az = (z0 - z1);
+                    const bx = (x2 - x1);
+                    const by = (y2 - y1);
+                    const bz = (z2 - z1);
+
+                    // normal vector based on points 0, 1 and 2
+                    const nx = ay * bz - az * by;
+                    const ny = az * bx - ax * bz;
+                    const nz = ax * by - ay * bx;
+
+                    const indexA = insert(x0,y0,z0, nx,ny,nz, 0,0);
+                    const indexB = insert(x1,y1,z1, nx,ny,nz, 0,1);
+                    const indexC = insert(x2,y2,z2, nx,ny,nz, 1,1);
+
+                    faces.push(indexA, indexB, indexC)
+                    break;
+                }
+                case 2:
+                {
+                    const ax = (x0 - x3);
+                    const ay = (y0 - y3);
+                    const az = (z0 - z3);
+                    const bx = (x2 - x3);
+                    const by = (y2 - y3);
+                    const bz = (z2 - z3);
+
+                    // normal vector based on points 0, 1 and 2
+                    const nx = ay * bz - az * by;
+                    const ny = az * bx - ax * bz;
+                    const nz = ax * by - ay * bx;
+
+                    const indexA = insert(x0,y0,z0, nx,ny,nz, 0,0);
+                    const indexC = insert(x2,y2,z2, nx,ny,nz, 1,1);
+                    const indexD = insert(x3,y3,z3, nx,ny,nz, 1,0);
+
+                    faces.push(indexA, indexC, indexD)
+
+                    break;
+                }
+            }
+
+        }
+        else
+        {
+            console.log("No two cuts for", tileA, tileB, "=>", otherCut0, otherCut1)
+        }
+
+
+    }
+
+    //console.log({facesByMaterial, position, normal, uv});
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(position), 3, false));
+    geometry.setAttribute("normal", new BufferAttribute(new Float32Array(normal), 3, false));
+    geometry.setAttribute("uv", new BufferAttribute(new Float32Array(uv), 2, false));
+
+    let start = 0;
+    const meshMaterials = [];
+
+    let index = [];
+
+    for (let i = 0; i < facesByMaterial.length; i++)
+    {
+        const faces = facesByMaterial[i];
+        if (faces)
+        {
+            index = index.concat(faces);
+
+            const numTris = faces.length;
+            //console.log("geometry.addGroup(",start, numTris, meshMaterials.length,")");
+            geometry.addGroup(start, numTris, meshMaterials.length);
+
+            meshMaterials.push(
+                materials[i].clone()
+            )
+
+            start += numTris;
+        }
+    }
+
+    geometry.setIndex(index);
+
+    const terrain = new Mesh(geometry, meshMaterials);
+    scene.add(terrain);
+}
 
 const heightIndexFactor = h_size / g_size;
 
+const pos = new Vector3();
+const vX1 = new Vector3();
+const vX2 = new Vector3();
+const vY1 = new Vector3();
 
-function createMarchingSquares(ground)
+const vAxisStart = new Vector3();
+const vAxisEnd = new Vector3();
+const transformed = new Vector3();
+const normal = new Vector3();
+const vUp = new Vector3();
+
+function createMarchingSquares(ground, insert, marchingSquaresArray)
 {
-    let count = 0;
-
     const {graph, tiles} = organicQuads;
 
     const {length} = tiles;
 
-    const attrsArray = new Array(marchingSquaresArray.length);
-    const positionsArray = new Array(marchingSquaresArray.length);
-
+    const faces = [];
     let tileDataIndex = 0;
     for (let i = 0; i < length; i += t_size)
     {
@@ -977,36 +1158,32 @@ function createMarchingSquares(ground)
         const heightIndex2 = n2 * heightIndexFactor;
         const heightIndex3 = n3 * heightIndexFactor;
 
-        const centroidX = tileData[tileDataIndex + td_cx];
-        const centroidY = heightFn(tileData[tileDataIndex + td_cx], tileData[tileDataIndex + td_cy]);
-        const centroidZ = tileData[tileDataIndex + td_cy];
+        // const centroidX = tileData[tileDataIndex + td_cx];
+        // const centroidY = heightFn(tileData[tileDataIndex + td_cx], tileData[tileDataIndex + td_cy]);
+        // const centroidZ = tileData[tileDataIndex + td_cy];
 
         const x0 = graph[n0 + g_x];
         const y0 = tileData[tileDataIndex + td_cut0] === -1 ?
             heightMap[heightIndex0 + h_height] :
             tileData[tileDataIndex + td_cut0];
-        //const y0 = heightMap[heightIndex0 + h_height];
         const z0 = graph[n0 + g_y];
 
         const x1 = graph[n1 + g_x];
         const y1 = tileData[tileDataIndex + td_cut1] === -1 ?
             heightMap[heightIndex1 + h_height] :
             tileData[tileDataIndex + td_cut1];
-        //const y1 = heightMap[heightIndex1 + h_height];
         const z1 = graph[n1 + g_y];
 
         const x2 = graph[n2 + g_x];
         const y2 = tileData[tileDataIndex + td_cut2] === -1 ?
             heightMap[heightIndex2 + h_height] :
             tileData[tileDataIndex + td_cut2];
-        //const y2 = heightMap[heightIndex2 + h_height]
         const z2 = graph[n2 + g_y];
 
         const x3 = graph[n3 + g_x];
         const y3 = tileData[tileDataIndex + td_cut3] === -1 ?
             heightMap[heightIndex3 + h_height] :
             tileData[tileDataIndex + td_cut3];
-        //const y3 = heightMap[heightIndex3 + h_height];
         const z3 = graph[n3 + g_y];
 
         const ax = (x0 - x1);
@@ -1030,19 +1207,19 @@ function createMarchingSquares(ground)
         const n1z = ax * cy - ay * cx;
 
         // average with world up and renormalize
-        let nx = (n0x + n1x) / 2;
-        let ny = (n0y + n1y) / 2;
-        let nz = (n0z + n1z) / 2;
+        let upX = (n0x + n1x) / 3;
+        let upY = (n0y + n1y + 1) / 3;
+        let upZ = (n0z + n1z) / 3;
 
-        const f = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
-        nx *= f;
-        ny *= f;
-        nz *= f;
+        const f = 1 / Math.sqrt(upX * upX + upY * upY + upZ * upZ);
+        upX *= f;
+        upY *= f;
+        upZ *= f;
 
         const g1 = heightMap[heightIndex0 + h_ground];
-        const g2 = heightMap[heightIndex1 + h_ground];
+        const g2 = heightMap[heightIndex3 + h_ground];
         const g4 = heightMap[heightIndex2 + h_ground];
-        const g8 = heightMap[heightIndex3 + h_ground];
+        const g8 = heightMap[heightIndex1 + h_ground];
 
         let tileCase = (
             ( g1 === ground ? 1 : 0) +
@@ -1051,10 +1228,9 @@ function createMarchingSquares(ground)
             ( g8 === ground ? 8 : 0)
         );
 
+
         if (tileCase !== 0)
         {
-            //tileCase = 15;
-
             // fix multi-color gaps
             if (tileCase === 1 && g2 !== g8)
             {
@@ -1073,44 +1249,80 @@ function createMarchingSquares(ground)
                 tileCase = 19;
             }
 
-            let attrs = attrsArray[tileCase];
-            if (!attrs)
+            if (tileCase === 5 && (g1 === GRASS || g1 === STONE))
             {
-                attrs = [];
-                attrsArray[tileCase] = attrs;
+                tileCase = 20;
             }
 
-            let positions = positionsArray[tileCase];
-            if (!positions)
+            if (tileCase === 10 && (g2 === GRASS || g2 === STONE))
             {
-                positions = [];
-                positionsArray[tileCase] = positions;
+                tileCase = 21;
             }
 
-            positions.push(centroidX,centroidY,centroidZ);
+            pos.set(x0, y0, z0);
+            vX1.set(x3 - x0, y3 - y0, z3 - z0);
+            vX2.set(x2 - x1, y2 - y1, z2 - z1);
+            vY1.set(x1 - x0, y1 - y0, z1 - z0);
 
-            attrs.push(
-                // ~~pos~~
-                x0 - centroidX, y0 - centroidY, z0 - centroidZ,
-                // up
-                nx,      ny,      nz,
-                // vX1
-                x3 - x0, y3 - y0, z3 - z0,
-                // vX2
-                x2 - x1, y2 - y1, z2 - z1,
-                // vY1
-                x1 - x0, y1 - y0, z1 - z0,
-            )
+            const geo = marchingSquaresArray[tileCase];
+
+            const index = geo.getIndex().array;
+            const positions = geo.getAttribute("position").array;
+            const uvs = geo.getAttribute("uv").array;
+            const normals = geo.getAttribute("normal").array;
+
+            //console.log({index, positions, normals, uvs})
+
+            for (let j = 0; j < index.length; j ++)
+            {
+                const k = index[j];
+
+                const idx = k * 3;
+                const uvIdx = k * 2;
+
+                const x = (positions[idx] + 0.5)* 1.01;
+                const y = (positions[idx + 1]+ 0.5)* 1.01;
+                const z = (positions[idx + 2]+ 0.5) * 1.01;
+
+                const nx = normals[idx];
+                const ny = normals[idx + 1];
+                const nz = normals[idx + 2];
+
+                vAxisStart.copy(vX1).multiplyScalar(x).add(pos);
+                vAxisEnd.copy(vX2).multiplyScalar(x).add(pos).add(vY1);
+
+                vUp.set(upX, upY, upZ).multiplyScalar(z)
+                transformed.copy(vAxisEnd).sub(vAxisStart).multiplyScalar(y).add(vAxisStart).add(vUp);
+
+                // so we act for a moment as if our normal vector was an actual position above the face and we transform
+                // that point just like the geometry
+                vAxisStart.copy(vX1).multiplyScalar(x + nx).add(pos);
+                vAxisEnd.copy(vX2).multiplyScalar(x + nx).add(pos).add(vY1);
+
+                vUp.set(upX, upY, upZ).multiplyScalar(z + nz)
+                normal.copy(vAxisEnd).sub(vAxisStart).multiplyScalar(y + ny).add(vAxisStart).add(vUp);
+
+                //  and then we substract the projected vertex and renormalize because our space is warped.
+                normal.sub(transformed).normalize();
+
+                faces.push(
+                    insert(
+                    transformed.x,
+                    transformed.y,
+                    transformed.z,
+                    normal.x,
+                    normal.y,
+                    normal.z,
+                    uvs[uvIdx],
+                    uvs[uvIdx + 1]
+                ))
+            }
         }
 
         tileDataIndex += td_size;
     }
-
-    return [attrsArray, positionsArray];
+    return faces;
 }
-
-
-const ms_attrs_size = 15;
 
 
 function onWindowResize()
@@ -1133,7 +1345,7 @@ function mainLoop()
     render();
     //stats.update();
 
-    //skyParameters.inclination = 0.1 + Math.sin(inclinationCount += 0.001) * 0.3;
+    //skyParameters.inclination = -0.012 + Math.sin(inclinationCount += 0.01) * 0.524;
 
     updateSun();
 
@@ -1195,7 +1407,7 @@ function extractMarchingSquares(scene)
 
 
 Promise.all([
-    0,//        loadScene("assets/tiles.glb"),
+    loadScene("assets/tiles.glb"),
     loadScene("assets/ground.glb"),
     loadScene("assets/ms.glb"),
     //loadScene("assets/ms-raised.glb"),
@@ -1211,45 +1423,22 @@ Promise.all([
 
         //scene.add( tiles.scene );
 
-        function dump(obj, level = "")
-        {
-            const {type} = obj;
-            if (type === "Group")
-            {
-                console.log(level + "GROUP", obj.name)
-
-                const nextLevel = level + "    "
-
-                const {children} = obj;
-                for (let i = 0; i < children.length; i++)
-                {
-                    dump(children[i], nextLevel);
-                }
-            }
-            else if (type === "Mesh")
-            {
-                console.log(level + "MESH", obj.name)
-            }
-        }
-
+        dump( ground.scene, "tiles: ")
 
         materials = MATERIAL_NAMES.map(n => {
             return ground.scene.children.find(kid => kid.name === n).material;
         })
 
-        console.log({materials});
-
         marchingSquaresArray = extractMarchingSquares(marchingSquares.scene);
-        //const msMapRaised = extractMarchingSquares(marchingSquaresRaised.scene);
-        //
-        // console.log({marchingSquaresArray, msMapRaised})
 
-        console.log(marchingSquaresArray);
+        //console.log("INDEXED", marchingSquaresArray.map(ms => ({index:ms.index,attributes: ms.attributes})))
+
+        //const msMapRaised = extractMarchingSquares(marchingSquaresRaised.scene);
+        // console.log({marchingSquaresArray, msMapRaised})
 
         //dump(marchingSquares.scene, "ms-normal: ");
         //dump(marchingSquaresRaised.scene, "ms-raised: ");
 
-        console.log("GLTF", tiles)
 
         // console.log("Scene Objects", tiles.scene.children.map(kid => kid.name).join(", "))
         //
@@ -1276,4 +1465,15 @@ Promise.all([
     })
 
 
+
+function group(array, count)
+{
+    const out = new Array(array.length / count);
+    for (let i = 0; i < out.length; i++)
+    {
+        out[i] = array.slice(i * count, i * count + count );
+    }
+
+    return out;
+}
 

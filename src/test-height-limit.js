@@ -16,6 +16,37 @@ const config = {
 let ctx, canvas;
 
 
+function draw(color, fn)
+{
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    for (let i = 0; i < 1; i += 0.01)
+    {
+        const y = fn(i);
+
+        if (i === 0)
+        {
+            ctx.moveTo(
+                i * 256,
+                256 - y* 256
+            );
+        }
+        else
+        {
+            ctx.lineTo(
+                i * 256,
+                256 - y* 256
+            );
+
+        }
+
+    }
+
+    ctx.stroke();
+
+}
+
+
 domready(
     () => {
 
@@ -46,34 +77,8 @@ domready(
         ctx.lineTo(256, 256);
         ctx.stroke();
 
-        ctx.strokeStyle = "#f00";
-
-
-
-        ctx.beginPath();
-        for (let i = 0; i < 1; i += 0.01)
-        {
-            const y = heightLimit(i);
-
-            if (i === 0)
-            {
-                ctx.moveTo(
-                    i * 256,
-                    256 - y* 256
-                );
-            }
-            else
-            {
-                ctx.lineTo(
-                    i * 256,
-                    256 - y* 256
-                );
-
-            }
-
-        }
-
-        ctx.stroke();
+        draw("#F00", x => heightLimit(x,0));
+        draw("#0d0", x => heightLimit(x,100));
 
     }
 );
