@@ -1,18 +1,8 @@
-import React, { memo, useEffect, useReducer, useRef, useState } from "react"
+import React, { memo, useEffect, useRef } from "react"
 import cx from "classnames"
 // noinspection ES6UnusedImports
 import STYLE from "./ui.css"
 import { observer } from "mobx-react-lite";
-import { action } from "mobx";
-
-const DEFAULT_STATE = {
-    visible: true
-}
-
-function reducer(state, action)
-{
-    return state;
-}
 
 const SelectButton = ({elem, index, active, onClick}) => {
 
@@ -49,9 +39,9 @@ const SizeBadge = memo(({size}) => {
     )
 })
 
-const EditorUI = observer(({ editorState }) =>
+const EditorUI = observer(({ editorState, download, clearAll }) =>
 {
-    const { tiles, visible, activeTileIndex, activeTile } = editorState;
+    const { tiles, visible, activeTileIndex, activeTile, dirty } = editorState;
 
     return (
         <>
@@ -100,6 +90,33 @@ const EditorUI = observer(({ editorState }) =>
                                     />
                                 ))
                             }
+                        </div>
+                    </div>
+                    <div className="row">
+                        <div className="col">
+                            <i
+                                className={ cx("fas mr-1", dirty ? "fa-spinner rotating" : "fa-check", dirty ? "text-muted" : "text-success" ) }
+                                title={ dirty ? "Write pending" : "Synched to localStorage" }
+                            />
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-secondary mr-1"
+                                onClick={ download }
+                                >
+                                Download JSON
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-danger mr-1"
+                                onClick={ () =>{
+                                    if (confirm("Do you really want to delete all tiles?"))
+                                    {
+                                        clearAll();
+                                    }
+                                } }
+                                >
+                                Clear
+                            </button>
                         </div>
                     </div>
                 </div>

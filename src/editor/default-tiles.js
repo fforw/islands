@@ -1,3 +1,15 @@
+import { Object3D } from "three"
+
+/**
+ * @typedef {Object} TileDefinition
+ *
+ * @property {Array<Object3D>} variants         imported variants objects for this tile
+ * @property {Number} id                        tile id. For multi-tiles the id of the upper left tile in rotation 0.
+ * @property {Number} size                      tile size. default is 1
+ * @property {HTMLCanvasElement} thumbnail      generated thumbnail as canvas
+ *
+ */
+
 export const DEFAULT_TILES = {
         "cactus": {
             "variants": ["cactus_short", "cactus_tall"]

@@ -5,6 +5,7 @@
     "author": "Sven Helmberger",
     "license": "Apache-2.0",
     "private": true,
+
     "dependencies": {
         "@fforw/organic-quads": "^0.0.3",
         "classnames": "^2.2.6",
@@ -22,6 +23,7 @@
         "three": "^0.116.1",
         "wavefunctioncollapse": "^2.0.0"
     },
+
     "devDependencies": {
         "@babel/cli": "^7.8.4",
         "@babel/core": "^7.9.6",
@@ -50,12 +52,14 @@
         "webpack-cli": "^3.3.11",
         "worker-loader": "^2.0.0"
     },
+
     "scripts": {
         "build": "node tooling/clean.js; cross-env NODE_ENV=production webpack -p",
         "build-dev": "cross-env NODE_ENV=development webpack --debug --output-pathinfo",
         "watch": "cross-env NODE_ENV=development webpack --debug --output-pathinfo -w",
         "test": "cross-env NODE_ENV=production BABEL_ENV=test mocha --require babel-register -R spec src/test/"
     },
+
     "browserslist": [
         "> 0.5%",
         "not dead"

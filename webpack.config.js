@@ -35,8 +35,9 @@ module.exports = {
         filename: "bundle-[name]-[chunkhash].js",
         chunkFilename: "bundle-[name]-[chunkhash].js",
 
-        library: "Demo",
-        libraryTarget: "var"
+        library: "App",
+        libraryTarget: "var",
+        libraryExport: "default"
     },
 
 

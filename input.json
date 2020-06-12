@@ -1,5 +1,78 @@
 {
-    "version" : 1,
-    "timestamp" : "2020-06-12T15:56:56.383Z",
-    "tiles" : []
+    "version": 1,
+    "timestamp": "2020-06-12T17:14:19.267Z",
+    "instances": [
+        {
+            "name": "house",
+            "position": [
+                -11,
+                0,
+                -11
+            ],
+            "rotation": 0,
+            "material": 0,
+            "indexes": [
+                0,
+                1,
+                12,
+                13
+            ],
+            "x": 0,
+            "y": 0
+        },
+        {
+            "name": "house",
+            "position": [
+                -9,
+                0,
+                -11
+            ],
+            "rotation": 3,
+            "material": 0,
+            "indexes": [
+                14,
+                2,
+                15,
+                3
+            ],
+            "x": 2,
+            "y": 0
+        },
+        {
+            "name": "house",
+            "position": [
+                -9,
+                0,
+                -9
+            ],
+            "rotation": 2,
+            "material": 0,
+            "indexes": [
+                39,
+                38,
+                27,
+                26
+            ],
+            "x": 2,
+            "y": 2
+        },
+        {
+            "name": "house",
+            "position": [
+                -11,
+                0,
+                -9
+            ],
+            "rotation": 1,
+            "material": 0,
+            "indexes": [
+                25,
+                37,
+                24,
+                36
+            ],
+            "x": 0,
+            "y": 2
+        }
+    ]
 }

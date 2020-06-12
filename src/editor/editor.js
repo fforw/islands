@@ -6,43 +6,48 @@ import STYLE from "../style.css"
 import {
     CubeCamera,
     DirectionalLight,
-    Group,
-    Line,
-    LineBasicMaterial,
-    Mesh,
-    MeshBasicMaterial,
     MOUSE,
     PerspectiveCamera,
-    PlaneBufferGeometry,
-    Raycaster,
     Scene,
+    sRGBEncoding,
     Vector2,
     Vector3,
     WebGLRenderer
 } from "three"
 import loadScene from "../loadScene";
-import { MATERIAL_NAMES, PHI } from "../constants";
-import Grid from "./Grid";
+import { MATERIAL_NAMES } from "../constants";
+import Grid, { TILE_SIZE } from "./Grid";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Sky } from "three/examples/jsm/objects/Sky";
-import { BufferGeometry } from "three/src/core/BufferGeometry";
 import EditorUI from "./EditorUI";
 import EditorState from "./EditorState";
 import { reaction } from "mobx";
 import "mobx-react-lite/batchingForReactDom"
 import threeJsThumbnailer from "../util/threeJsThumbnailer";
 import { DEFAULT_TILES } from "./default-tiles";
+import Cursor from "./Cursor";
+import TileInstance from "./TileInstance";
 
+import inputData from "../../input.json"
+import download from "../util/download";
 
 const TAU = Math.PI * 2;
 
+// maximum coverage a tile kind can have in the editor.
+const TILE_MAXIMUM = 0.5;
+
+const GRID_SIZE = 12;
+
 //////////////////////////////////////////////////////////////////////
 
+const LOCAL_STORAGE_KEY ="@fforw/islands:data"
 
-
+const HISTORY_LIMIT = 32;
 let container, stats, grid;
 let camera, scene, renderer, light;
 let controls, water;
+
+let instances = new Set();
 
 let materials, cursor;
 
@@ -75,7 +80,8 @@ function onDocumentMouseMove( event ) {
     mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
 }
-let mouse = new Vector2()
+let mouse = new Vector2(100,0)
+
 function onWindowResize()
 {
 
@@ -86,31 +92,15 @@ function onWindowResize()
 
 }
 
-let INTERSECTED
-const raycaster = new Raycaster();
-
 function mainLoop()
 {
-    raycaster.setFromCamera( mouse, camera );
+    cursor.update(mouse, camera);
 
-    const intersects = raycaster.intersectObjects( grid.group.children );
-
-    if ( intersects.length > 0 ) {
-
-        if ( INTERSECTED !== intersects[ 0 ].object ) {
-
-            //if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-            INTERSECTED = intersects[ 0 ].object;
-
-            const { position } = INTERSECTED;
-            cursor.position.set(position.x,position.z,position.y)
-        }
-
-    } else {
-        INTERSECTED = null;
+    if (ghost)
+    {
+        ghost.rotation.y = TAU * rotation / 4;
+        ghost.position.copy(cursor.object.position);
     }
-
 
     render();
 
@@ -189,48 +179,6 @@ function createEmptyThumbnail()
 }
 
 
-function createCursor()
-{
-    const lineMat = new LineBasicMaterial({
-        color: 0x000000,
-        linewidth: 1.2,
-        depthTest: false,
-        opacity: 0.5,
-        transparent: true
-    });
-
-    const points = [];
-    points.push(new Vector3(-0.5, 0, -0.5));
-    points.push(new Vector3(0.5, 0, -0.5));
-    points.push(new Vector3(0.5, 0, 0.5));
-    points.push(new Vector3(-0.5, 0, 0.5));
-    points.push(new Vector3(-0.5, 0, -0.5));
-
-    const border = new Line(
-        new BufferGeometry().setFromPoints(points),
-        lineMat
-    );
-
-    const insidePlane = new Mesh(
-        new PlaneBufferGeometry(
-            1,
-            1
-        ),
-        new MeshBasicMaterial({
-            color: 0xffffff,
-            depthTest: false,
-            opacity: 0.2,
-            transparent: true
-        })
-    );
-    insidePlane.rotation.x = -TAU / 4;
-
-    const cursor = new Group();
-    cursor.add(insidePlane)
-    cursor.add(border)
-
-    return cursor;
-}
 
 
 function prepareTiles(tilesGLTF)
@@ -286,12 +234,338 @@ function prepareTiles(tilesGLTF)
             id: 0,
             name: "empty",
             variants: [],
+            size: 1,
             thumbnail: createEmptyThumbnail()
         });
 
         return tiles;
     })
 }
+
+
+function getMaxTileSize(tiles)
+{
+    let max = 0;
+    for (let i = 0; i < tiles.length; i++)
+    {
+        const {size} = tiles[i];
+
+        if (size > max)
+        {
+            max = size;
+        }
+    }
+    return max;
+}
+
+
+
+function convertTimestamp(data)
+{
+    const { timestamp } = data;
+
+    if (typeof timestamp === "string")
+    {
+        data.timestamp = new Date(timestamp);
+    }
+}
+
+
+convertTimestamp(inputData);
+
+function loadFromLocalStorage()
+{
+    const json = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!json)
+    {
+        return null;
+    }
+
+    const data = JSON.parse(json);
+    convertTimestamp(data);
+    return data;
+}
+
+
+function findNamed(array, name)
+{
+    for (let i = 0; i < array.length; i++)
+    {
+        const e = array[i];
+        if (e.name === name)
+        {
+            return e;
+        }
+    }
+    return null;
+}
+
+
+function loadInstances()
+{
+    let data = loadFromLocalStorage();
+
+    if (!data || data.timestamp.getTime() < inputData.timestamp.getTime())
+    {
+        console.info("Loading input JSON");
+        data = inputData;
+    }
+    else
+    {
+        console.info("Loading from localStorage");
+    }
+
+    const { instances: rawInstances } = data;
+
+    const notFound = new Set();
+
+    for (let i = 0; i < rawInstances.length; i++)
+    {
+        const raw = rawInstances[i];
+
+        const tile = findNamed(tiles, raw.name);
+
+        if (tile)
+        {
+            const instance = new TileInstance(
+                scene,
+                tile,
+                new Vector3(raw.position[0], raw.position[1], raw.position[2]),
+                raw.rotation,
+                raw.material,
+                raw.x,
+                raw.y
+            );
+
+            instance.variant = (Math.random() * tile.variants.length)|0;
+            instance.indexes = raw.indexes;
+
+            grid.setTile(instance.material, instance.x, instance.y, instance.tile, instance.rotation, true);
+            instances.add(instance);
+        }
+        else
+        {
+            notFound.add(raw.name);
+        }
+    }
+
+    if (notFound.size > 0)
+    {
+        console.log("Could not find some tiles: ", notFound)
+    }
+}
+
+function getCurrentInstancesAsJSON()
+{
+    return JSON.stringify(
+        {
+            version: 1,
+            timestamp: new Date().toISOString(),
+            instances: [ ... instances].map( i => ({
+                name: i.tile.name,
+                position: [
+                    i.position.x,
+                    i.position.y,
+                    i.position.z
+                ],
+                rotation: i.rotation,
+                material: i.material,
+                indexes: i.indexes,
+                x: i.x,
+                y: i.y
+            }))
+        },
+        null,
+        4
+    );
+}
+
+let history = [];
+let historyPos = 0;
+let historyEnd = 0;
+
+let timerId;
+
+function debouncedSync()
+{
+    editorState.setDirty(true);
+
+    if (timerId)
+    {
+        clearTimeout(timerId);
+        timerId = null;
+    }
+
+    timerId = setTimeout(sync, 1000);
+}
+
+function sync()
+{
+    timerId = null;
+    editorState.setDirty(false);
+    localStorage.setItem(LOCAL_STORAGE_KEY, getCurrentInstancesAsJSON())
+}
+
+
+function onCanvasClick(ev)
+{
+    const { activeTile } = editorState;
+
+    if (cursor.valid)
+    {
+        const instance = activeTile.id !== 0 ? new TileInstance(
+            scene,
+            activeTile,
+            ghost.position,
+            rotation,
+            cursor.material,
+            cursor.x,
+            cursor.y
+        ) : null;
+
+        const removed = [];
+
+        const indexes = grid.setTile(cursor.material, cursor.x, cursor.y, activeTile, rotation, offset => {
+
+            for (let curr of instances)
+            {
+                if (curr.indexes.indexOf(offset) >= 0)
+                {
+                    grid.clearTile(curr);
+                    curr.removeObject();
+                    removed.push(curr);
+                    instances.delete(curr)
+                    break;
+                }
+            }
+        })
+
+        if (instance)
+        {
+            instance.indexes = indexes;
+            instances.add(instance);
+        }
+        addHistoryEntry(instance, removed);
+
+
+        debouncedSync();
+
+    }
+}
+
+function addHistoryEntry(added, removed)
+{
+    const newEntry = {
+        added,
+        removed
+    };
+
+    if (historyPos < HISTORY_LIMIT)
+    {
+        history[historyPos++] = newEntry;
+        historyEnd = historyPos;
+    }
+    else
+    {
+        for (let i = 0; i < historyPos; i++)
+        {
+            history[i] = history[i + 1];
+        }
+        history[historyPos] = newEntry;
+    }
+
+    //console.log("after addHistoryEntry: newEntry = ", newEntry, "grid.data = ",grid.data, "history = ", history)
+
+}
+
+function redo()
+{
+    if (historyPos < historyEnd)
+    {
+        //console.log("REDO", history, historyPos)
+
+        const { added, removed } = history[historyPos++];
+
+        if (added)
+        {
+            grid.setTile(added.material, added.x, added.y, added.tile, added.rotation, true);
+            added.createObject();
+
+            instances.add(added)
+        }
+
+        if (removed)
+        {
+            for (let i = 0; i < removed.length; i++)
+            {
+                const instance = removed[i];
+                grid.clearTile(instance);
+                instance.removeObject();
+
+                instances.delete(instance)
+            }
+        }
+
+        debouncedSync();
+
+    }
+}
+
+
+function undo()
+{
+    if (historyPos > 0)
+    {
+        //console.log("UNDO")
+
+        const { added, removed } = history[--historyPos];
+
+        if (added)
+        {
+            grid.clearTile(added);
+            added.removeObject();
+            instances.delete(added)
+        }
+
+        if (removed)
+        {
+            for (let i = 0; i < removed.length; i++)
+            {
+                const instance = removed[i];
+                grid.setTile(instance.material, instance.x, instance.y, instance.tile, instance.rotation, true);
+                instance.createObject();
+                instances.add(instance)
+            }
+        }
+
+        debouncedSync();
+
+    }
+}
+
+
+function onKeyDown(ev)
+{
+    const { keyCode } = ev;
+
+    if (keyCode === 82) // R / shift-R
+    {
+         rotation = (rotation + (ev.shiftKey ? 1 : -1)) & 3;
+    }
+    else if (keyCode === 90 && ev.ctrlKey) // ctrl+Z / ctrl+shift+Z
+    {
+        if (ev.shiftKey)
+        {
+            redo();
+        }
+        else
+        {
+            undo();
+        }
+    }
+
+}
+
 
 Promise.all([
     loadScene("assets/ground.glb"),
@@ -313,6 +587,7 @@ Promise.all([
         })
 
 
+        const maxSize = getMaxTileSize(tiles);
 
         //dump(_tiles.scene, "_tiles: ")
         //console.log(materials);
@@ -326,6 +601,8 @@ Promise.all([
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(getWidth(), window.innerHeight);
 
+        renderer.outputEncoding = sRGBEncoding
+
         container.appendChild(renderer.domElement);
 
         uiContainer = document.createElement("div");
@@ -337,9 +614,9 @@ Promise.all([
         camera = new PerspectiveCamera(55, getWidth() / window.innerHeight, 1, 20000);
         camera.up.set(0,1,0);
 
-        const dist = 32;
+        const dist = 35;
 
-        camera.position.set(0, dist, -dist * 0.75);
+        camera.position.set(-dist, dist, 0);
         camera.lookAt(new Vector3(0,0,0));
         camera.updateProjectionMatrix();
 
@@ -419,34 +696,114 @@ Promise.all([
         }
         controls.update();
 
-        grid = new Grid(scene, 12, materials);
+        grid = new Grid(scene, GRID_SIZE, materials, tiles);
+        cursor = new Cursor(scene, grid, editorState);
+        cursor.update(mouse,camera)
 
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+        document.addEventListener( 'keydown', onKeyDown, false );
 
         window.addEventListener("resize", onWindowResize, false);
-        cursor = createCursor();
-        scene.add( cursor );
+        container.addEventListener("click", onCanvasClick, false);
+
+        loadInstances()
+
+        editorState.selectTile(1);
 
         renderUI().then(mainLoop);
     })
-
 
 const editorState = new EditorState(tiles);
 
 reaction(
     () => editorState.visible,
-    () => {
-        onWindowResize();
-        renderUI();
-    }
+    onWindowResize
 )
+
+let ghost;
+let rotation = 0;
 
 reaction(
     () => editorState.activeTileIndex,
     () => {
-        console.log("ACTIVE", editorState.activeTile)
+
+        const { activeTile, activeTileIndex } = editorState;
+        cursor.object.scale.set(activeTile.size,activeTile.size,activeTile.size);
+
+
+        if (ghost)
+        {
+            disposeMaterials(ghost);
+            scene.remove(ghost);
+        }
+
+        if (activeTileIndex === 0)
+        {
+            ghost = null;
+        }
+        else
+        {
+            ghost = tiles[activeTileIndex].variants[0].clone();
+            ghost.scale.set(TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            setOpacity(ghost,0.2)
+
+            ghost.rotation.y = TAU * rotation / 4;
+
+            console.log({ghost})
+            scene.add(ghost)
+        }
+        console.log("ACTIVE", activeTile)
     }
 )
+
+function setOpacity(o, v)
+{
+    if (o.material)
+    {
+        o.material = o.material.clone();
+
+        o.material.transparent = v < 1;
+        o.material.opacity = v;
+    }
+
+    const { children } = o;
+    if (children)
+    {
+        for (let i = 0; i < children.length; i++)
+        {
+            setOpacity(children[i], v);
+        }
+    }
+}
+
+function disposeMaterials(o)
+{
+    if (o.material)
+    {
+        o.material.dispose();
+    }
+
+    const { children } = o;
+    if (children)
+    {
+        for (let i = 0; i < children.length; i++)
+        {
+            disposeMaterials(children[i]);
+        }
+    }
+}
+
+function clearAll()
+{
+    for (let curr of instances)
+    {
+        curr.removeObject();
+        grid.clearTile(curr);
+    }
+    addHistoryEntry(null, [ ... instances ])
+    instances.clear();
+    debouncedSync();
+}
 
 function renderUI()
 {
@@ -457,6 +814,10 @@ function renderUI()
                 ReactDOM.render(
                     <EditorUI
                         editorState={ editorState }
+                        clearAll={ clearAll }
+                        download={ () => {
+                            download("input.json", getCurrentInstancesAsJSON(), "text/json");
+                        }}
                     />,
                     uiContainer,
                     resolve
@@ -469,4 +830,8 @@ function renderUI()
             }
         }
     );
+}
+
+export default {
+    LOCAL_STORAGE_KEY
 }

@@ -22,7 +22,10 @@ export default class EditorState
     visible = true;
 
     @observable
-    activeTileIndex = 1;
+    dirty = false;
+
+    @observable
+    activeTileIndex = 0;
 
     @action
     toggleVisible(value = !this.visible)
@@ -30,10 +33,17 @@ export default class EditorState
         this.visible = value;
     }
 
+
     @action.bound
     selectTile(tile)
     {
         this.activeTileIndex = tile;
+    }
+
+    @action
+    setDirty(dirty)
+    {
+        this.dirty = dirty;
     }
 
     get activeTile()

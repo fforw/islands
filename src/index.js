@@ -17,7 +17,7 @@ import {
     PerspectiveCamera,
     PlaneBufferGeometry,
     RepeatWrapping,
-    Scene,
+    Scene, sRGBEncoding,
     Vector3,
     WebGLRenderer
 } from "three"
@@ -42,15 +42,14 @@ import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import Stats from "three/examples/jsm/libs/stats.module";
 import loadTexture from "./loadTexture";
 import { heightLimit } from "./heightLimit";
 import { CASE_NAMES, FOREST, GRASS, GROUND_COLORS, MATERIAL_NAMES, SAND, STONE, UNDEFINED, WATER } from "./constants";
 import { dump } from "./util/dump";
 
-
-const TAU = Math.PI * 2;
-
-const EFFECTS = true;
+const SKY_EFFECT = true;
+const WATER_EFFECT = false;
 const HEIGHT_MAP = false;
 
 const DETAIL = 15;
@@ -754,7 +753,7 @@ function init()
     renderer = new WebGLRenderer();
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    
+    renderer.outputEncoding = sRGBEncoding
     container.appendChild(renderer.domElement);
 
     //
@@ -778,7 +777,7 @@ function init()
     // Water
 
     const waterGeometry = new PlaneBufferGeometry(30000, 30000);
-    if (EFFECTS)
+    if (WATER_EFFECT)
     {
         water = new Water(
             waterGeometry,
@@ -802,19 +801,19 @@ function init()
     {
         const material = new MeshStandardMaterial({
             side: FrontSide,
-            color: "#048",
+            color: "#00232a",
             envMap: cubeCamera.renderTarget.texture,
-            roughness: 0.0
+            roughness: 0.2
         });
 
         const mesh = new Mesh(waterGeometry, material);
         mesh.rotation.x = -Math.PI / 2;
-        //scene.add(mesh)
+        scene.add(mesh)
     }
 
     // Skybox
 
-    if (EFFECTS)
+    if (SKY_EFFECT)
     {
         sky = new Sky();
 
