@@ -1,78 +1,759 @@
 {
     "version": 1,
-    "timestamp": "2020-06-12T17:14:19.267Z",
+    "timestamp": "2020-06-12T17:36:43.890Z",
     "instances": [
         {
-            "name": "house",
+            "name": "palm_tree",
             "position": [
-                -11,
+                -2.5,
                 0,
-                -11
+                8.5
             ],
             "rotation": 0,
-            "material": 0,
+            "material": 1,
             "indexes": [
-                0,
-                1,
-                12,
-                13
+                249
             ],
-            "x": 0,
-            "y": 0
+            "x": 9,
+            "y": 8
+        },
+        {
+            "name": "stone_large",
+            "position": [
+                -9.5,
+                0,
+                7.5
+            ],
+            "rotation": 0,
+            "material": 1,
+            "indexes": [
+                230
+            ],
+            "x": 2,
+            "y": 7
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -5.5,
+                0,
+                2.5
+            ],
+            "rotation": 0,
+            "material": 1,
+            "indexes": [
+                174
+            ],
+            "x": 6,
+            "y": 2
+        },
+        {
+            "name": "stone_large",
+            "position": [
+                -15.5,
+                0,
+                -2.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                548
+            ],
+            "x": 8,
+            "y": 9
+        },
+        {
+            "name": "stone_large",
+            "position": [
+                -16.5,
+                0,
+                -2.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                547
+            ],
+            "x": 7,
+            "y": 9
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -21.5,
+                0,
+                -1.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                554
+            ],
+            "x": 2,
+            "y": 10
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -21.5,
+                0,
+                -2.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                542
+            ],
+            "x": 2,
+            "y": 9
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -19.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                484
+            ],
+            "x": 4,
+            "y": 4
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -18.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                485
+            ],
+            "x": 5,
+            "y": 4
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -19.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                472
+            ],
+            "x": 4,
+            "y": 3
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -18.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                473
+            ],
+            "x": 5,
+            "y": 3
+        },
+        {
+            "name": "tree_thin",
+            "position": [
+                -17.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                474
+            ],
+            "x": 6,
+            "y": 3
+        },
+        {
+            "name": "tree_thin",
+            "position": [
+                -16.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                475
+            ],
+            "x": 7,
+            "y": 3
+        },
+        {
+            "name": "tree_thin",
+            "position": [
+                -17.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                486
+            ],
+            "x": 6,
+            "y": 4
+        },
+        {
+            "name": "tree_thin",
+            "position": [
+                -16.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                487
+            ],
+            "x": 7,
+            "y": 4
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -19.5,
+                0,
+                -6.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                496
+            ],
+            "x": 4,
+            "y": 5
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -18.5,
+                0,
+                -6.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                497
+            ],
+            "x": 5,
+            "y": 5
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -18.5,
+                0,
+                -5.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                509
+            ],
+            "x": 5,
+            "y": 6
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -19.5,
+                0,
+                -5.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                508
+            ],
+            "x": 4,
+            "y": 6
+        },
+        {
+            "name": "stone_large",
+            "position": [
+                -15.5,
+                0,
+                -16.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                668
+            ],
+            "x": 8,
+            "y": 7
+        },
+        {
+            "name": "stone_large",
+            "position": [
+                -16.5,
+                0,
+                -16.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                667
+            ],
+            "x": 7,
+            "y": 7
+        },
+        {
+            "name": "stone_large",
+            "position": [
+                -16.5,
+                0,
+                -17.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                655
+            ],
+            "x": 7,
+            "y": 6
+        },
+        {
+            "name": "stone_large",
+            "position": [
+                -15.5,
+                0,
+                -17.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                656
+            ],
+            "x": 8,
+            "y": 6
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -22.5,
+                0,
+                -17.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                649
+            ],
+            "x": 1,
+            "y": 6
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -21.5,
+                0,
+                -17.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                650
+            ],
+            "x": 2,
+            "y": 6
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -21.5,
+                0,
+                -18.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                638
+            ],
+            "x": 2,
+            "y": 5
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -22.5,
+                0,
+                -18.5
+            ],
+            "rotation": 0,
+            "material": 4,
+            "indexes": [
+                637
+            ],
+            "x": 1,
+            "y": 5
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -15.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                488
+            ],
+            "x": 8,
+            "y": 4
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -15.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                476
+            ],
+            "x": 8,
+            "y": 3
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -14.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                477
+            ],
+            "x": 9,
+            "y": 3
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -14.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                489
+            ],
+            "x": 9,
+            "y": 4
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -13.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                478
+            ],
+            "x": 10,
+            "y": 3
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -13.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                490
+            ],
+            "x": 10,
+            "y": 4
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -12.5,
+                0,
+                -7.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                491
+            ],
+            "x": 11,
+            "y": 4
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -12.5,
+                0,
+                -8.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                479
+            ],
+            "x": 11,
+            "y": 3
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -17.5,
+                0,
+                -9.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                462
+            ],
+            "x": 6,
+            "y": 2
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -16.5,
+                0,
+                -9.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                463
+            ],
+            "x": 7,
+            "y": 2
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -16.5,
+                0,
+                -10.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                451
+            ],
+            "x": 7,
+            "y": 1
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -17.5,
+                0,
+                -10.5
+            ],
+            "rotation": 0,
+            "material": 3,
+            "indexes": [
+                450
+            ],
+            "x": 6,
+            "y": 1
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -15.5,
+                0,
+                7.5
+            ],
+            "rotation": 0,
+            "material": 2,
+            "indexes": [
+                380
+            ],
+            "x": 8,
+            "y": 7
+        },
+        {
+            "name": "tree_thin",
+            "position": [
+                -22.5,
+                0,
+                8.5
+            ],
+            "rotation": 0,
+            "material": 2,
+            "indexes": [
+                385
+            ],
+            "x": 1,
+            "y": 8
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -22.5,
+                0,
+                1.5
+            ],
+            "rotation": 0,
+            "material": 2,
+            "indexes": [
+                301
+            ],
+            "x": 1,
+            "y": 1
+        },
+        {
+            "name": "tree_tall_dark",
+            "position": [
+                -13.5,
+                0,
+                10.5
+            ],
+            "rotation": 0,
+            "material": 2,
+            "indexes": [
+                418
+            ],
+            "x": 10,
+            "y": 10
         },
         {
             "name": "house",
             "position": [
-                -9,
+                -17,
                 0,
-                -11
+                2
+            ],
+            "rotation": 0,
+            "material": 2,
+            "indexes": [
+                306,
+                307,
+                318,
+                319
+            ],
+            "x": 6,
+            "y": 1
+        },
+        {
+            "name": "house",
+            "position": [
+                -15,
+                0,
+                2
             ],
             "rotation": 3,
-            "material": 0,
+            "material": 2,
             "indexes": [
-                14,
-                2,
-                15,
-                3
+                320,
+                308,
+                321,
+                309
             ],
-            "x": 2,
-            "y": 0
+            "x": 8,
+            "y": 1
         },
         {
             "name": "house",
             "position": [
-                -9,
+                -15,
                 0,
-                -9
+                4
             ],
             "rotation": 2,
-            "material": 0,
+            "material": 2,
             "indexes": [
-                39,
-                38,
-                27,
-                26
+                345,
+                344,
+                333,
+                332
             ],
-            "x": 2,
-            "y": 2
+            "x": 8,
+            "y": 3
         },
         {
             "name": "house",
             "position": [
-                -11,
+                -17,
                 0,
-                -9
+                4
             ],
             "rotation": 1,
-            "material": 0,
+            "material": 2,
             "indexes": [
-                25,
-                37,
-                24,
-                36
+                331,
+                343,
+                330,
+                342
             ],
-            "x": 0,
-            "y": 2
+            "x": 6,
+            "y": 3
+        },
+        {
+            "name": "house",
+            "position": [
+                -21,
+                0,
+                7
+            ],
+            "rotation": 1,
+            "material": 2,
+            "indexes": [
+                363,
+                375,
+                362,
+                374
+            ],
+            "x": 2,
+            "y": 6
+        },
+        {
+            "name": "house",
+            "position": [
+                -21,
+                0,
+                5
+            ],
+            "rotation": 1,
+            "material": 2,
+            "indexes": [
+                339,
+                351,
+                338,
+                350
+            ],
+            "x": 2,
+            "y": 4
         }
     ]
 }
