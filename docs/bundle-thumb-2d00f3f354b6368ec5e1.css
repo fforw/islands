@@ -57,46 +57,4 @@ canvas
 }
 
 
-.sidebar
-{
-    position: absolute;
-    width: 220px;
-    top: 0;
-    right: -220px;
-    z-index: 100;
-}
-
-.sidebar.visible
-{
-    right: 0;
-}
-
-
-.toggle
-{
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 100;
-    background: #000;
-
-}
-
-.toggle.visible
-{
-    position: absolute;
-    top: 0;
-    right: 220px;
-    z-index: 100;
-    background: #000;
-
-}
-
-.tile-selector
-{
-    max-height: 25em;
-    overflow-y: auto;
-}
-
-
-/*# sourceMappingURL=bundle-editor-859b3a98b987f8b5d7d2.css.map*/
+/*# sourceMappingURL=bundle-thumb-2d00f3f354b6368ec5e1.css.map*/
