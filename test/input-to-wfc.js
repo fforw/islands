@@ -1,65 +1,87 @@
 import { describe, it } from "mocha";
 const assert = require("power-assert");
+import prepareTiles, { getMaxId } from "../src/editor/prepareTiles";
+import inputToWfc, { tileName } from "../src/util/inputToWFC";
+import { numMaterials } from "../src/editor/Grid";
+import { MATERIAL_NAMES } from "../src/constants";
 
 const inputData = require("./test-input.json");
 
-import Grid, { numMaterials } from "../src/editor/Grid";
-import loadInstanceJSON from "../src/editor/loadInstanceJSON";
-import prepareTiles, { getMaxId } from "../src/editor/prepareTiles";
-import inputToWfc from "../src/util/inputToWfc";
-import { MATERIAL_NAMES } from "../src/constants";
 
-const tiles = prepareTiles()
+const WEIGHT_TARGETS = [
+	1, // WATER
+	0.8, // SAND
+	0.3, // GRASS
+	0.1, // FOREST
+	0.6, // STONE
+	1, // ICE
+	1, // DIRT
+	1, // PACKED_ICE
+];
 
 describe("Input-To-WFC", function(){
 	it("creates stats", function()
 	{
-		const table = inputToWfc(inputData, 12);
+		const tiles = prepareTiles()
+
+		const {weights, adjacencies} = inputToWfc(inputData, 12, tiles, WEIGHT_TARGETS);
+
+		console.log(weights);
+
 
 		const maxId = getMaxId(tiles);
+		const numEntries = maxId + 1;
 
-		const numTiles = tiles.length;
-
-		const names = new Map();
-
-		for (let i=0; i < numTiles; i++)
-		{
-			const { name, id, sizeX, sizeZ } = tiles[i];
-
-			const subCount = sizeX * sizeZ;
-
-			for (let j=0; j < subCount; j++)
-			{
-				names.set(id + j, name + "-" + (j + 1));
-			}
-		}
-
-
-		const t_size = maxId + 1;
+		const numInts = (maxId + 31) >> 5;
 
 		for (let i=0; i < numMaterials; i++)
 		{
-			for (let j=0; j < maxId; j++)
+			const off = i * numEntries;
+			if (weights[off + 1] === 1)
 			{
-				let stats = "";
-				for (let k=0; k < maxId; k++)
+				console.log("On " + MATERIAL_NAMES[i]+ ": " + tileName(tiles,0)," = 100%");
+			}
+			else
+			{
+				const sum = weights[off];
+				let buf = "";
+				for (let j = 0; j < maxId; j++)
 				{
-					const v = table[i * maxId * t_size + j * t_size + 1 + k];
-					if (v > 0)
+					const value = weights[off + 1 + j];
+					if (value > 0)
 					{
-						stats += "from " + names.get(j) + " to " + names.get(k) + " = " + (v * 100) + "%, ";
+						buf += tileName(tiles,j) + " = " + Math.round(value / sum * 100) + "%, "
 					}
 				}
-
-				if (stats.length > 0)
-				{
-					console.log("TILE ", names.get(j), "ON", MATERIAL_NAMES[i], ":", stats);
-				}
-
+				console.log("On " + MATERIAL_NAMES[i]+ ": " + buf);
 			}
 		}
 
-		//console.log({table})
+		console.log("\n------------------------------------------------------------------------------\n")
+
+	    for (let i=0; i < numMaterials; i++)
+		{
+			for (let j = 0; j < maxId; j++)
+			{
+				let buf = "";
+
+				for (let k = 0; k < maxId; k++)
+				{
+					const index = k >> 5;
+					const bit = 1 << (k - (index << 5));
+					const value = adjacencies[i * maxId * numInts + j * numInts + index ] & bit;
+					if (value)
+					{
+						buf += tileName(tiles, k) + ", ";
+					}
+				}
+
+				if (buf.length)
+				{
+					console.log("ON " + MATERIAL_NAMES[i] + ", " + tileName(tiles, j), "is adjacent to " + buf);
+				}
+			}
+		}
 
 	});
 });

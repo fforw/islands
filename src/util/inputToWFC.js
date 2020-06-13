@@ -5,14 +5,20 @@ import { getMaxId } from "../editor/prepareTiles";
 
 
 
-function tileName(tiles, tileId)
+export function tileName(tiles, tileId)
 {
     for (let i = 0; i < tiles.length; i++)
     {
         const { name, id, idCount} = tiles[i];
-        if (tileId >= id && tileId < id + idCount)
+
+        if (tileId === id)
         {
             return name;
+        }
+
+        if (tileId > id && tileId < id + idCount)
+        {
+            return name + "-" + (tileId - id + 1);
         }
     }
 
@@ -21,7 +27,7 @@ function tileName(tiles, tileId)
 
 
 
-export default function (inputData, size, tiles)
+export default function inputToWFC(inputData, size, tiles, weightTargets)
 {
     const maxId = getMaxId(tiles);
 
@@ -46,13 +52,17 @@ export default function (inputData, size, tiles)
         {
             adjacencies[offset ] = changed;
 
-            console.log(MATERIAL_NAMES[mat], ":", tileName(tiles, tileA), " -> ", tileName(tiles, tileB), { index, bit} )
+            //console.log(MATERIAL_NAMES[mat], ":", tileName(tiles, tileA), " -> ", tileName(tiles, tileB), { index, bit} )
         }
     }
 
-    const counts = new Uint32Array( numMaterials * maxId);
-    const tableSize = numMaterials * maxId * numInts;
-    const adjacencies = new Uint32Array(tableSize);
+    const numEntries = maxId + 1;
+
+    const numWeights = numMaterials * numEntries;
+    const weights = new Uint32Array( numWeights);
+
+    const numAdjacencies = numMaterials * maxId * numInts;
+    const adjacencies = new Uint32Array(numAdjacencies);
 
     for (let mat = 0; mat < numMaterials; mat++)
     {
@@ -64,7 +74,7 @@ export default function (inputData, size, tiles)
 
                 if (tile !== 0)
                 {
-                    counts[mat * maxId + tile]++;
+                    weights[mat * numEntries + 1 + tile]++;
                 }
 
                 const top = y === 0 ? 0 : grid.data[index - size];
@@ -81,8 +91,31 @@ export default function (inputData, size, tiles)
         }
     }
 
+    index = 0;
+    for (let i=0; i < numMaterials; i++)
+    {
+        let sum = 0;
+        for (let j = 1; j < maxId; j++)
+        {
+            sum += weights[index + 1 + j];
+        }
+        if (sum === 0)
+        {
+            weights[index + 1] = 1;
+            weights[index] = 1;
+        }
+        else
+        {
+            const emptyWeight = sum * weightTargets[i];
+            weights[index + 1] = emptyWeight;
+            weights[index] = sum + emptyWeight;
+        }
+        index += numEntries
+    }
+
+
     return {
-        counts,
+        weights,
         adjacencies
     };
 }

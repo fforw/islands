@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "timestamp": "2020-06-13T13:31:32.504Z",
+    "timestamp": "2020-06-13T16:10:38.427Z",
     "instances": [
         {
             "name": "stone_small",
@@ -9,7 +9,6 @@
                 0,
                 3.5
             ],
-            "rotation": 0,
             "material": 1,
             "x": 10,
             "y": 3
@@ -21,7 +20,6 @@
                 0,
                 -18.5
             ],
-            "rotation": 0,
             "material": 4,
             "x": 5,
             "y": 5
@@ -33,7 +31,6 @@
                 0,
                 -17.5
             ],
-            "rotation": 0,
             "material": 4,
             "x": 5,
             "y": 6
@@ -45,7 +42,6 @@
                 0,
                 -19.5
             ],
-            "rotation": 0,
             "material": 4,
             "x": 3,
             "y": 4
@@ -57,7 +53,6 @@
                 0,
                 -18.5
             ],
-            "rotation": 0,
             "material": 4,
             "x": 3,
             "y": 5
@@ -69,7 +64,6 @@
                 0,
                 7.5
             ],
-            "rotation": 0,
             "material": 1,
             "x": 8,
             "y": 7
@@ -81,7 +75,6 @@
                 0,
                 -7.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 5,
             "y": 4
@@ -93,7 +86,6 @@
                 0,
                 -6.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 5,
             "y": 5
@@ -105,7 +97,6 @@
                 0,
                 -7.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 4,
             "y": 4
@@ -117,7 +108,6 @@
                 0,
                 -6.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 4,
             "y": 5
@@ -129,7 +119,6 @@
                 0,
                 -5.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 5,
             "y": 6
@@ -141,7 +130,6 @@
                 0,
                 -5.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 4,
             "y": 6
@@ -153,7 +141,6 @@
                 0,
                 -8.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 4,
             "y": 3
@@ -165,7 +152,6 @@
                 0,
                 -8.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 5,
             "y": 3
@@ -177,7 +163,6 @@
                 0,
                 -4.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 5,
             "y": 7
@@ -189,7 +174,6 @@
                 0,
                 -4.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 4,
             "y": 7
@@ -201,7 +185,6 @@
                 0,
                 1.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 9,
             "y": 1
@@ -213,7 +196,6 @@
                 0,
                 2.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 9,
             "y": 2
@@ -225,7 +207,6 @@
                 0,
                 5.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 3,
             "y": 5
@@ -237,7 +218,6 @@
                 0,
                 1.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 3,
             "y": 1
@@ -249,7 +229,6 @@
                 0,
                 -4.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 10,
             "y": 7
@@ -261,7 +240,6 @@
                 0,
                 8.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 2,
             "y": 8
@@ -273,34 +251,9 @@
                 0,
                 -15.5
             ],
-            "rotation": 0,
             "material": 4,
             "x": 4,
             "y": 8
-        },
-        {
-            "name": "flower",
-            "position": [
-                -16.5,
-                0,
-                -3.5
-            ],
-            "rotation": 0,
-            "material": 3,
-            "x": 7,
-            "y": 8
-        },
-        {
-            "name": "flower",
-            "position": [
-                -16.5,
-                0,
-                -2.5
-            ],
-            "rotation": 0,
-            "material": 3,
-            "x": 7,
-            "y": 9
         },
         {
             "name": "flower",
@@ -309,7 +262,6 @@
                 0,
                 -3.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 5,
             "y": 8
@@ -321,7 +273,6 @@
                 0,
                 -5.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 3,
             "y": 6
@@ -333,7 +284,6 @@
                 0,
                 -7.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 3,
             "y": 4
@@ -345,7 +295,6 @@
                 0,
                 -9.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 4,
             "y": 2
@@ -357,7 +306,6 @@
                 0,
                 -7.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 6,
             "y": 4
@@ -369,7 +317,6 @@
                 0,
                 -4.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 3,
             "y": 7
@@ -381,7 +328,6 @@
                 0,
                 -6.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 3,
             "y": 5
@@ -393,7 +339,6 @@
                 0,
                 -8.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 3,
             "y": 3
@@ -405,7 +350,6 @@
                 0,
                 -9.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 5,
             "y": 2
@@ -417,7 +361,6 @@
                 0,
                 -6.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 6,
             "y": 5
@@ -429,7 +372,6 @@
                 0,
                 -5.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 6,
             "y": 6
@@ -441,7 +383,6 @@
                 0,
                 -10.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 0,
             "y": 1
@@ -453,7 +394,6 @@
                 0,
                 -8.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 0,
             "y": 3
@@ -465,7 +405,6 @@
                 0,
                 -6.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 0,
             "y": 5
@@ -477,7 +416,6 @@
                 0,
                 -4.5
             ],
-            "rotation": 0,
             "material": 3,
             "x": 0,
             "y": 7
@@ -489,7 +427,6 @@
                 0,
                 5.5
             ],
-            "rotation": 0,
             "material": 1,
             "x": 4,
             "y": 5
@@ -501,7 +438,6 @@
                 0,
                 3.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 2,
             "y": 2
@@ -513,7 +449,6 @@
                 0,
                 6.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 7,
             "y": 5
@@ -525,7 +460,6 @@
                 0,
                 10.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 9,
             "y": 10
@@ -537,7 +471,6 @@
                 0,
                 9.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 9,
             "y": 9
@@ -549,10 +482,130 @@
                 0,
                 3.5
             ],
-            "rotation": 0,
             "material": 2,
             "x": 1,
             "y": 3
+        },
+        {
+            "name": "cactus",
+            "position": [
+                -11.5,
+                0,
+                4.5
+            ],
+            "material": 1,
+            "x": 0,
+            "y": 4
+        },
+        {
+            "name": "pine",
+            "position": [
+                -21.5,
+                0,
+                -2.5
+            ],
+            "material": 3,
+            "x": 2,
+            "y": 9
+        },
+        {
+            "name": "pine",
+            "position": [
+                -20.5,
+                0,
+                -2.5
+            ],
+            "material": 3,
+            "x": 3,
+            "y": 9
+        },
+        {
+            "name": "flower",
+            "position": [
+                -16.5,
+                0,
+                10.5
+            ],
+            "material": 2,
+            "x": 7,
+            "y": 10
+        },
+        {
+            "name": "flower",
+            "position": [
+                -16.5,
+                0,
+                9.5
+            ],
+            "material": 2,
+            "x": 7,
+            "y": 9
+        },
+        {
+            "name": "flower",
+            "position": [
+                -17.5,
+                0,
+                6.5
+            ],
+            "material": 2,
+            "x": 6,
+            "y": 6
+        },
+        {
+            "name": "flower",
+            "position": [
+                -17.5,
+                0,
+                5.5
+            ],
+            "material": 2,
+            "x": 6,
+            "y": 5
+        },
+        {
+            "name": "flower",
+            "position": [
+                -16.5,
+                0,
+                1.5
+            ],
+            "material": 2,
+            "x": 7,
+            "y": 1
+        },
+        {
+            "name": "flower",
+            "position": [
+                -17.5,
+                0,
+                1.5
+            ],
+            "material": 2,
+            "x": 6,
+            "y": 1
+        },
+        {
+            "name": "flower",
+            "position": [
+                -18.5,
+                0,
+                10.5
+            ],
+            "material": 2,
+            "x": 5,
+            "y": 10
+        },
+        {
+            "name": "flower",
+            "position": [
+                -18.5,
+                0,
+                9.5
+            ],
+            "material": 2,
+            "x": 5,
+            "y": 9
         }
     ]
 }

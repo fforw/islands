@@ -140,6 +140,7 @@ export default function prepareTiles(tilesGLTF)
     {
         tiles.unshift({
             id: 0,
+            idCount: 1,
             name: "empty",
             variants: [],
             sizeX: 1,

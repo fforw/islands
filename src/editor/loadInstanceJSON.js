@@ -30,7 +30,7 @@ export default function loadInstanceJSON(data, tiles, grid, instances, scene)
                 scene,
                 tile,
                 new Vector3(raw.position[0], raw.position[1], raw.position[2]),
-                raw.rotation,
+                (Math.random() * 4)|0,
                 raw.material,
                 raw.x,
                 raw.y
