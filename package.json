@@ -5,7 +5,6 @@
     "author": "Sven Helmberger",
     "license": "Apache-2.0",
     "private": true,
-
     "dependencies": {
         "@fforw/organic-quads": "^0.0.3",
         "classnames": "^2.2.6",
@@ -23,7 +22,6 @@
         "three": "^0.116.1",
         "wavefunctioncollapse": "^2.0.0"
     },
-
     "devDependencies": {
         "@babel/cli": "^7.8.4",
         "@babel/core": "^7.9.6",
@@ -42,6 +40,7 @@
         "glslify-hex": "^2.1.1",
         "glslify-loader": "^2.0.0",
         "html-webpack-plugin": "^4.3.0",
+        "ignore-styles": "^5.0.1",
         "loader-utils": "^2.0.0",
         "mini-css-extract-plugin": "^0.9.0",
         "mocha": "^7.1.2",
@@ -52,14 +51,12 @@
         "webpack-cli": "^3.3.11",
         "worker-loader": "^2.0.0"
     },
-
     "scripts": {
         "build": "node tooling/clean.js; cross-env NODE_ENV=production webpack -p",
         "build-dev": "cross-env NODE_ENV=development webpack --debug --output-pathinfo",
         "watch": "cross-env NODE_ENV=development webpack --debug --output-pathinfo -w",
-        "test": "cross-env NODE_ENV=production BABEL_ENV=test mocha --require babel-register -R spec src/test/"
+        "test": "cross-env NODE_ENV=production BABEL_ENV=test mocha -r @babel/register -r ignore-styles -R spec test/"
     },
-
     "browserslist": [
         "> 0.5%",
         "not dead"

@@ -19,7 +19,8 @@ import {
     RepeatWrapping,
     Scene, sRGBEncoding,
     Vector3,
-    WebGLRenderer
+    Color,
+    WebGLRenderer, MeshBasicMaterial, WireframeGeometry, LineSegments
 } from "three"
 
 import OrganicQuads, {
@@ -45,12 +46,23 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import loadTexture from "./loadTexture";
 import { heightLimit } from "./heightLimit";
-import { CASE_NAMES, FOREST, GRASS, GROUND_COLORS, MATERIAL_NAMES, SAND, STONE, UNDEFINED, WATER } from "./constants";
+import {
+    CASE_NAMES,
+    FOREST,
+    GRASS,
+    GROUND_COLORS,
+    MATERIAL_NAMES,
+    PHI,
+    SAND,
+    STONE,
+    UNDEFINED,
+    WATER
+} from "./constants";
 import { dump } from "./util/dump";
 
 const SKY_EFFECT = true;
 const WATER_EFFECT = false;
-const HEIGHT_MAP = false;
+const HEIGHT_MAP = true;
 
 const DETAIL = 15;
 const MAX_HEIGHT = 300;
@@ -493,6 +505,9 @@ function addHeightMap()
     const normals = [];
     const colors = [];
 
+    const helperVertices = [];
+    const helperNormals = [];
+
     // generate vertices, normals and color data for a simple grid geometry
     const { graph, tiles } = organicQuads;
 
@@ -657,6 +672,22 @@ function addHeightMap()
             colors.push(col1[0], col1[1], col1[2]);
             colors.push(col3[0], col3[1], col3[2]);
             colors.push(col2[0], col2[1], col2[2]);
+
+
+            const mx = (x3 + x2) / 2;
+            const my = (y3 + y2) / 2;
+            const mz = (z3 + z2) / 2;
+
+            helperVertices.push(
+                (x1 + x0) / 2, (y1 + y0) / 2,(z1 + z0) / 2,
+                (x3 + mx) / 2, (y3 + my) / 2,(z3 + mz) / 2,
+                (x2 + mx) / 2, (y2 + my) / 2,(z2 + mz) / 2
+            )
+
+            helperNormals.push(nx, ny, nz);
+            helperNormals.push(nx, ny, nz);
+            helperNormals.push(nx, ny, nz);
+
         }
 
         tileDataIndex += td_size;
@@ -675,35 +706,42 @@ function addHeightMap()
     geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
     geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
 
-    const material = new MeshStandardMaterial({
-        vertexColors: true,
-        side: DoubleSide,
-        roughness: 0.5
-    });
+    // const material = new MeshStandardMaterial({
+    //     vertexColors: true,
+    //     side: DoubleSide,
+    //     roughness: 0.5
+    // });
+    // const mesh = new Mesh(geometry, material);
+    // mesh.position.set(0, -WATER_LIMIT, 0);
+    //scene.add(mesh);
 
-    // material.onBeforeCompile = shader => {
-    //
-    //     const {vertexShader,fragmentShader,uniforms} = shader;
-    //
-    //     console.log("--- VERT:\n", vertexShader);
-    //     console.log("--- FRAG:\n", fragmentShader);
-    //     console.log({uniforms})
-    // };
+    const wireframe = new WireframeGeometry( geometry );
 
-    const mesh = new Mesh(geometry, material);
+    const line = new LineSegments( wireframe );
+    line.material.depthTest = false;
+    line.material.color = new Color("#000");
+    line.material.opacity = 0.25;
+    line.material.transparent = true;
+    scene.add( line );
 
-    mesh.position.set(0, -WATER_LIMIT, 0);
+    {
+        const geometry = new BufferGeometry();
+        geometry.setAttribute("position", new BufferAttribute(new Float32Array(helperVertices), 3, false));
+        geometry.setAttribute("normal", new BufferAttribute(new Float32Array(helperNormals), 3, false));
 
-    // var wireframe = new WireframeGeometry( geometry );
-    //
-    // var line = new LineSegments( wireframe );
-    // line.material.depthTest = false;
-    // line.material.opacity = 0.25;
-    // line.material.transparent = true;
-    //
-    //
-    // scene.add( line );
-    scene.add(mesh);
+        const mesh = new Mesh(
+            geometry,
+            new MeshBasicMaterial({
+                color: new Color("#f0f"),
+                depthTest: false,
+                // opacity: 0.2,
+                // transparent: true
+            })
+        )
+
+        scene.add(mesh);
+
+    }
 
 }
 
@@ -739,6 +777,8 @@ function updateSun()
 
 
 let cubeCamera, sky;
+
+
 
 
 function init()
@@ -808,7 +848,7 @@ function init()
 
         const mesh = new Mesh(waterGeometry, material);
         mesh.rotation.x = -Math.PI / 2;
-        scene.add(mesh)
+        //scene.add(mesh)
     }
 
     // Skybox
@@ -877,6 +917,7 @@ function init()
     }
 
 }
+
 
 
 let materialCompile = 0;

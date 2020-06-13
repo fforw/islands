@@ -106,7 +106,7 @@ export default class Cursor
             }
 
             const { point } = intersects[0];
-            const { size } = editorState.activeTile;
+            const { sizeX, sizeY, sizeZ } = editorState.activeTile;
 
             const matOff = this.material * 2;
 
@@ -117,11 +117,11 @@ export default class Cursor
             const x = Math.floor((point.x - offX ) / TILE_SIZE) + grid.size/2;
             const y = Math.floor((point.z - offY ) / TILE_SIZE) + grid.size/2;
 
-            const valid =  x + size <= grid.size && y + size <= grid.size;
+            const valid =  x + sizeX <= grid.size && y + sizeZ <= grid.size;
             this.setValid(valid);
 
-            const objectX = offX + (x - grid.size/2) * TILE_SIZE + size / 2;
-            const objectY = offY + (y - grid.size/2) * TILE_SIZE + size / 2;
+            const objectX = offX + (x - grid.size/2) * TILE_SIZE + sizeX / 2;
+            const objectY = offY + (y - grid.size/2) * TILE_SIZE + sizeY / 2;
 
             if (object.position.x !== objectX || object.position.z !== objectY)
             {

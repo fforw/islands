@@ -38,7 +38,10 @@ export default class TileInstance
         this.x = x;
         this.y = y;
 
-        this.createObject();
+        if (scene)
+        {
+            this.createObject();
+        }
     }
 
     createObject()

@@ -50,7 +50,10 @@ export const DEFAULT_TILES = {
         },
         "house": {
             "variants": ["House"],
-            "size" : 2
+            "sizeX" : 2,
+            "sizeY" : 2,
+            "sizeZ" : 2,
+            "symmetric": false
         }
     }
 ;

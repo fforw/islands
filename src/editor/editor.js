@@ -30,6 +30,8 @@ import TileInstance from "./TileInstance";
 
 import inputData from "../../input.json"
 import download from "../util/download";
+import loadInstanceJSON from "./loadInstanceJSON";
+import prepareTiles from "./prepareTiles";
 
 const TAU = Math.PI * 2;
 
@@ -55,8 +57,6 @@ let uiContainer;
 
 const sidebarWidth = 220;
 
-const thumbnailWidth = 40;
-const thumbnailHeight = thumbnailWidth / 0.75;
 
 const skyParameters = {
     distance: 1000,
@@ -151,113 +151,6 @@ function updateSun()
 }
 
 
-function createEmptyThumbnail()
-{
-    const canvas = document.createElement("canvas");
-    canvas.width = thumbnailWidth;
-    canvas.height = thumbnailHeight;
-    const ctx = canvas.getContext("2d");
-
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(255,64,64,0.5)";
-    ctx.fillStyle = "#fff";
-
-    const hw = thumbnailWidth * 0.5;
-    const hh = thumbnailHeight * 0.5;
-    const size = Math.min(hh,hw) * 0.3;
-
-    ctx.beginPath();
-    ctx.moveTo(-size + hw,-size + hh);
-    ctx.lineTo( size + hw, size + hh);
-    ctx.moveTo( size + hw,-size + hh);
-    ctx.lineTo(-size + hw, size + hh);
-    ctx.rect(0,0,thumbnailWidth,thumbnailHeight)
-    ctx.stroke();
-
-    ctx.fillText("None", 4, thumbnailHeight - 4);
-    return canvas;
-}
-
-
-
-
-function prepareTiles(tilesGLTF)
-{
-    const tiles = [];
-
-    let pos = 0;
-    for (let name in DEFAULT_TILES)
-    {
-        if (DEFAULT_TILES.hasOwnProperty(name))
-        {
-            const tileGroup = DEFAULT_TILES[name];
-            const {variants, size = 1} = tileGroup;
-            tiles[pos] = {
-                id: -1,
-                name,
-                ...tileGroup,
-                size,
-                variants: tilesGLTF.scene.children.filter(o => variants.indexOf(o.name) >= 0),
-            };
-            pos++;
-        }
-    }
-
-    tiles.sort((a, b) => a.name === b.name ? 0 : a.name < b.name ? -1 : 1);
-
-    let idCounter = 1;
-    tiles.forEach( t => {
-        t.id = idCounter;
-        idCounter += t.size * t.size;
-    });
-
-    const thumbNames = [];
-    const objects = [];
-
-    tiles.forEach((t, idx) => {
-        thumbNames[idx] = t.name;
-        objects[idx] = t.variants[0];
-    });
-
-    //console.log({objects, thumbNames, tiles})
-
-    return threeJsThumbnailer(
-        objects,
-        thumbnailWidth,
-        thumbnailHeight,
-        thumbNames
-    ).then(thumbnails => {
-
-        thumbnails.forEach((th, idx) => tiles[idx].thumbnail = th);
-
-        tiles.unshift({
-            id: 0,
-            name: "empty",
-            variants: [],
-            size: 1,
-            thumbnail: createEmptyThumbnail()
-        });
-
-        return tiles;
-    })
-}
-
-
-function getMaxTileSize(tiles)
-{
-    let max = 0;
-    for (let i = 0; i < tiles.length; i++)
-    {
-        const {size} = tiles[i];
-
-        if (size > max)
-        {
-            max = size;
-        }
-    }
-    return max;
-}
-
 
 
 function convertTimestamp(data)
@@ -287,18 +180,6 @@ function loadFromLocalStorage()
 }
 
 
-function findNamed(array, name)
-{
-    for (let i = 0; i < array.length; i++)
-    {
-        const e = array[i];
-        if (e.name === name)
-        {
-            return e;
-        }
-    }
-    return null;
-}
 
 
 function loadInstances()
@@ -315,44 +196,7 @@ function loadInstances()
         console.info("Loading from localStorage");
     }
 
-    const { instances: rawInstances } = data;
-
-    const notFound = new Set();
-
-    for (let i = 0; i < rawInstances.length; i++)
-    {
-        const raw = rawInstances[i];
-
-        const tile = findNamed(tiles, raw.name);
-
-        if (tile)
-        {
-            const instance = new TileInstance(
-                scene,
-                tile,
-                new Vector3(raw.position[0], raw.position[1], raw.position[2]),
-                raw.rotation,
-                raw.material,
-                raw.x,
-                raw.y
-            );
-
-            instance.variant = (Math.random() * tile.variants.length)|0;
-            instance.indexes = raw.indexes;
-
-            grid.setTile(instance.material, instance.x, instance.y, instance.tile, instance.rotation, true);
-            instances.add(instance);
-        }
-        else
-        {
-            notFound.add(raw.name);
-        }
-    }
-
-    if (notFound.size > 0)
-    {
-        console.log("Could not find some tiles: ", notFound)
-    }
+    return loadInstanceJSON(data, tiles, grid, instances, scene);
 }
 
 function getCurrentInstancesAsJSON()
@@ -587,8 +431,6 @@ Promise.all([
         })
 
 
-        const maxSize = getMaxTileSize(tiles);
-
         //dump(_tiles.scene, "_tiles: ")
         //console.log(materials);
 
@@ -696,7 +538,7 @@ Promise.all([
         }
         controls.update();
 
-        grid = new Grid(scene, GRID_SIZE, materials, tiles);
+        grid = new Grid( GRID_SIZE, scene, materials);
         cursor = new Cursor(scene, grid, editorState);
         cursor.update(mouse,camera)
 
@@ -728,7 +570,7 @@ reaction(
     () => {
 
         const { activeTile, activeTileIndex } = editorState;
-        cursor.object.scale.set(activeTile.size,activeTile.size,activeTile.size);
+        cursor.object.scale.set(activeTile.sizeX,activeTile.sizeY,activeTile.sizeZ);
 
 
         if (ghost)
@@ -832,6 +674,17 @@ function renderUI()
     );
 }
 
-export default {
-    LOCAL_STORAGE_KEY
+
+class Output
+{
+    KEY = LOCAL_STORAGE_KEY;
+
+    download = download;
+
+    get grid()
+    {
+        return grid;
+    }
 }
+
+export default new Output()

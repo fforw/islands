@@ -23,17 +23,17 @@ const SelectButton = ({elem, index, active, onClick}) => {
 }
 
 
-const SizeBadge = memo(({size}) => {
+const SizeBadge = memo(({sizeX, sizeY }) => {
 
     return (
         <span
             className="badge badge-secondary ml-1"
             style={{
-                visibility: size === 1 && "hidden"
+                visibility: sizeX === 1 && sizeY === 1 && "hidden"
             }}
         >
             {
-                size + "x" + size
+                sizeX + "x" + sizeY
             }
         </span>
     )
@@ -74,7 +74,7 @@ const EditorUI = observer(({ editorState, download, clearAll }) =>
                             {
                                 activeTile.name
                             }
-                            <SizeBadge size={ activeTile.size }/>
+                            <SizeBadge sizeX={ activeTile.sizeX } sizeY={ activeTile.sizeZ }/>
                         </div>
                     </div>
                     <div className="row">

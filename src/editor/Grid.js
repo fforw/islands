@@ -3,22 +3,22 @@ import { DIRT, TAU } from "../constants";
 
 export const TILE_SIZE = 1;
 
+export const numMaterials = DIRT;
+
 export default class Grid
 {
     /**
-     * Construcst a new material grid.
+     * Construct a new material grid.
      *
-     * @param {Scene} scene         three.js scene
      * @param {Number} size         edge length of one material field (int)
-     * @param {Array} materials     array with materials
+     * @param {Scene} [scene]         three.js scene
+     * @param {Array} [materials]     array with materials
      */
-    constructor(scene, size, materials, tiles)
+    constructor(size, scene, materials)
     {
         this.scene = scene;
         this.size = size;
-        this.tiles = tiles;
 
-        const numMaterials = DIRT;
         this.data = new Float64Array(size * size * numMaterials)
 
         const offsets = new Float64Array(numMaterials * 2);
@@ -36,50 +36,57 @@ export default class Grid
         let rotateCount = rotateEvery;
         let flag = false;
 
-        const group = new Group();
-        group.name = "MaterialGrid"
+            const group = new Group();
+            group.name = "MaterialGrid"
 
-        for (let curr = 0; curr < numMaterials; curr++)
-        {
-            offsets[index++] = x;
-            offsets[index++] = y;
-
-            console.log("MATERIAL #", curr, "at", x, y);
-
-            const geo = new PlaneBufferGeometry(TILE_SIZE * size, TILE_SIZE * size, 1, 1);
-            const mat = materials[curr].clone();
-            mat.side = DoubleSide;
-            const mesh = new Mesh(geo, mat);
-            mesh.name = "M" + curr;
-            mesh.position.set(x, y, 0);
-            //mesh.rotation.y = -Math.PI
-            group.add(mesh);
-
-
-            x += dx;
-            y += dy;
-
-            if (--rotateCount === 0)
+            for (let curr = 0; curr < numMaterials; curr++)
             {
-                const tmp = dx;
-                dx = -dy;
-                dy = tmp;
+                offsets[index++] = x;
+                offsets[index++] = y;
 
-                if (flag)
+                //console.log("MATERIAL #", curr, "at", x, y);
+
+                if (scene)
                 {
-                    rotateEvery++;
+                    const geo = new PlaneBufferGeometry(TILE_SIZE * size, TILE_SIZE * size, 1, 1);
+                    const mat = materials[curr].clone();
+                    mat.side = DoubleSide;
+                    const mesh = new Mesh(geo, mat);
+                    mesh.name = "M" + curr;
+                    mesh.position.set(x, y, 0);
+                    //mesh.rotation.y = -Math.PI
+                    group.add(mesh);
                 }
-                flag = !flag;
 
-                rotateCount = rotateEvery;
+
+                x += dx;
+                y += dy;
+
+                if (--rotateCount === 0)
+                {
+                    const tmp = dx;
+                    dx = -dy;
+                    dy = tmp;
+
+                    if (flag)
+                    {
+                        rotateEvery++;
+                    }
+                    flag = !flag;
+
+                    rotateCount = rotateEvery;
+                }
             }
+
+            group.rotation.x = TAU/4;
+
+        if (scene)
+        {
+            this.group = group;
+
+            scene.add(group);
         }
 
-        group.rotation.x = TAU/4;
-
-        this.group = group;
-
-        scene.add(group);
     }
 
 
@@ -96,12 +103,12 @@ export default class Grid
     setTile(material, tx, ty, tile, rotation, cleanFn = null)
     {
         const { size : gridSize } = this;
-        const { size } = tile;
+        const { sizeX, sizeZ } = tile;
 
         const rotationIndex = rotation * 2;
 
-        let posX = tx + offsets[rotationIndex] * (size - 1);
-        let posY = ty + offsets[rotationIndex + 1] * (size - 1);
+        let posX = tx + offsets[rotationIndex] * (sizeX - 1);
+        let posY = ty + offsets[rotationIndex + 1] * (sizeZ - 1);
 
         const dx = directions[rotationIndex];
         const dy = directions[rotationIndex + 1];
@@ -109,18 +116,18 @@ export default class Grid
         const matOff = material * gridSize * gridSize;
 
         const clean = !cleanFn;
-        const indexes = !clean && new Array(size * size);
+        const indexes = !clean && new Array(sizeX * sizeZ);
 
         // correction of line plus rotated vector
-        const lineDx = - dx * size - dy;
-        const lineDy = - dy * size + dx;
+        const lineDx = - dx * sizeX - dy;
+        const lineDy = - dy * sizeZ + dx;
 
 
         let index = 0;
         let value = tile.id
-        for (let y = 0; y < size; y++)
+        for (let y = 0; y < sizeZ; y++)
         {
-            for (let x = 0; x < size; x++)
+            for (let x = 0; x < sizeX; x++)
             {
                 const offset = matOff + posX + posY * gridSize;
 
