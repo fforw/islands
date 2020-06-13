@@ -10,6 +10,8 @@ import { Object3D } from "three"
  *
  */
 
+
+
 export const DEFAULT_TILES = {
         "cactus": {
             "variants": ["cactus_short", "cactus_tall"]
@@ -50,10 +52,16 @@ export const DEFAULT_TILES = {
         },
         "house": {
             "variants": ["House"],
-            "sizeX" : 2,
+            "sizeX" : 3,
             "sizeY" : 2,
-            "sizeZ" : 2,
-            "symmetric": false
+            "sizeZ" : 3,
+            
+            "idCount" : 2,
+            "pattern" : [
+                1,1,1,
+                1,0,1,
+                1,1,1
+            ]
         }
     }
 ;

@@ -121,7 +121,7 @@ export default class Cursor
             this.setValid(valid);
 
             const objectX = offX + (x - grid.size/2) * TILE_SIZE + sizeX / 2;
-            const objectY = offY + (y - grid.size/2) * TILE_SIZE + sizeY / 2;
+            const objectY = offY + (y - grid.size/2) * TILE_SIZE + sizeZ / 2;
 
             if (object.position.x !== objectX || object.position.z !== objectY)
             {

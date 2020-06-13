@@ -124,12 +124,13 @@ export default class Grid
 
 
         let index = 0;
-        let value = tile.id
         for (let y = 0; y < sizeZ; y++)
         {
             for (let x = 0; x < sizeX; x++)
             {
                 const offset = matOff + posX + posY * gridSize;
+
+                const value = tile.pattern[y * sizeX + x];
 
                 if (clean)
                 {
@@ -151,7 +152,6 @@ export default class Grid
                     this.data[offset] = value;
                 }
 
-                value++;
                 posX += dx;
                 posY += dy;
             }

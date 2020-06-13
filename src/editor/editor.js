@@ -214,7 +214,7 @@ function getCurrentInstancesAsJSON()
                 ],
                 rotation: i.rotation,
                 material: i.material,
-                indexes: i.indexes,
+                //indexes: i.indexes,
                 x: i.x,
                 y: i.y
             }))

@@ -4,7 +4,7 @@ import threeJsThumbnailer from "../util/threeJsThumbnailer";
 
 export function getMaxId(tiles)
 {
-    return tiles[tiles.length - 1].id + tiles[tiles.length - 1].sizeX * tiles[tiles.length - 1].sizeZ;
+    return tiles[tiles.length - 1].id + tiles[tiles.length - 1].idCount;
 }
 
 function createEmptyThumbnail()
@@ -46,13 +46,14 @@ export default function prepareTiles(tilesGLTF)
     {
         if (DEFAULT_TILES.hasOwnProperty(name))
         {
-            const tileGroup = DEFAULT_TILES[name];
-            const {variants, sizeX = 1, sizeY = 1, sizeZ = 1} = tileGroup;
+            const raw = DEFAULT_TILES[name];
+            const { variants, sizeX = 1, sizeY = 1, sizeZ = 1 } = raw;
             tiles[pos] = {
+                ... raw,
+                
                 id: -1,
+                idCount: raw.idCount || 1,
                 name,
-                ...tileGroup,
-                symmetric: typeof tileGroup.symmetric === "undefined" ? true : tileGroup.symmetric,
                 sizeX,
                 sizeY,
                 sizeZ,
@@ -68,8 +69,35 @@ export default function prepareTiles(tilesGLTF)
     // provide ids
     let idCounter = 1;
     tiles.forEach(t => {
+
+        const { name, idCount, pattern, sizeX, sizeZ } = t;
+
         t.id = idCounter;
-        idCounter += t.sizeX * t.sizeZ;
+        idCounter += idCount;
+
+        if (idCount > 1)
+        {
+            if (!pattern || !Array.isArray(pattern))
+            {
+                throw new Error("Tile '" + name + "': tiles with idCount > 1 must define a pattern");
+            }
+
+            const size = sizeX * sizeZ;
+            if (pattern.length !== size)
+            {
+                throw new Error("Tile '" + name + "': Pattern must be " + sizeX + " x " + sizeZ + " = " + size + " elements long: " + pattern);
+            }
+
+            for (let i = 0; i < pattern.length; i++)
+            {
+                pattern[i] += t.id;
+            }
+        }
+        else
+        {
+            // create 1x1 "pattern"
+            t.pattern = [ t.id ];
+        }
     });
 
     if (tilesGLTF)
@@ -95,12 +123,14 @@ export default function prepareTiles(tilesGLTF)
 
             tiles.unshift({
                 id: 0,
+                idCount: 1,
                 name: "empty",
                 variants: [],
                 sizeX: 1,
                 sizeY: 0.1,
                 sizeZ: 1,
-                thumbnail: createEmptyThumbnail()
+                thumbnail: createEmptyThumbnail(),
+                pattern: [0]
             });
 
             return tiles;
