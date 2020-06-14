@@ -4,6 +4,7 @@ import prepareTiles, { getMaxId } from "../src/editor/prepareTiles";
 import inputToWfc, { tileName } from "../src/util/inputToWFC";
 import { numMaterials } from "../src/editor/Grid";
 import { MATERIAL_NAMES } from "../src/constants";
+import printMask from "../src/util/printMask";
 
 const inputData = require("./test-input.json");
 
@@ -19,15 +20,20 @@ const WEIGHT_TARGETS = [
 	1, // PACKED_ICE
 ];
 
+
+
+
 describe("Input-To-WFC", function(){
-	it("creates stats", function()
+	it("creates WFC stats from input rules", function()
 	{
 		const tiles = prepareTiles()
 
+		//console.log("TILES", JSON.stringify(tiles, null, 4))
+
 		const {weights, adjacencies} = inputToWfc(inputData, 12, tiles, WEIGHT_TARGETS);
 
-		console.log(weights);
 
+		console.log({weights});
 
 		const maxId = getMaxId(tiles);
 		const numEntries = maxId + 1;
@@ -63,25 +69,18 @@ describe("Input-To-WFC", function(){
 		{
 			for (let j = 0; j < maxId; j++)
 			{
-				let buf = "";
-
-				for (let k = 0; k < maxId; k++)
-				{
-					const index = k >> 5;
-					const bit = 1 << (k - (index << 5));
-					const value = adjacencies[i * maxId * numInts + j * numInts + index ] & bit;
-					if (value)
-					{
-						buf += tileName(tiles, k) + ", ";
-					}
-				}
+				const buf = printMask(tiles, adjacencies, maxId, numInts, i, j);
 
 				if (buf.length)
 				{
-					console.log("ON " + MATERIAL_NAMES[i] + ", " + tileName(tiles, j), "is adjacent to " + buf);
+					console.log("ON ", MATERIAL_NAMES[i] , ", " , tileName(tiles, j), "is adjacent to ", buf);
 				}
 			}
+
+			console.log("DEFAULT MASK ON ", MATERIAL_NAMES[i], ": ", printMask(tiles, adjacencies, maxId, numInts, i, maxId))
 		}
+
+
 
 	});
 });

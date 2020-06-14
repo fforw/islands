@@ -58,7 +58,16 @@ import {
     UNDEFINED,
     WATER
 } from "./constants";
+
+import prepareTiles, { getMaxId } from "./editor/prepareTiles";
+import inputToWfc, { tileName } from "./util/inputToWFC";
+import { numMaterials } from "./editor/Grid";
+
+
+
 import { dump } from "./util/dump";
+import waveFunctionCollapse from "./util/waveFunctionCollapse";
+import { components } from "./util/color";
 
 const SKY_EFFECT = true;
 const WATER_EFFECT = false;
@@ -89,14 +98,19 @@ let container, stats;
 let camera, scene, renderer, light;
 let controls, water;
 
-const td_cx = 0;
-const td_cy = 1;
-const td_walkable = 2;
-const td_cut0 = 3;
-const td_cut1 = 4;
-const td_cut2 = 5;
-const td_cut3 = 6;
-const td_size = 7;
+export const td_cx = 0;
+export const td_cy = 1;
+export const td_walkable = 2;
+export const td_cut0 = 3;
+export const td_cut1 = 4;
+export const td_cut2 = 5;
+export const td_cut3 = 6;
+export const td_tileId = 7;
+export const td_entropy = 8;
+export const td_collapsed = 9;
+export const td_ground = 10;
+export const td_bitmask = 11;
+export const td_size = 12;
 
 let tileData;
 let heightMap;
@@ -328,10 +342,10 @@ const tc_cut0 = 3;
 const tc_cut1 = 4;
 const tc_size = 5;
 
-const h_height = 0;
-const h_ground = 1;
-const h_cuts = 2;
-const h_size = 3;
+export const h_height = 0;
+export const h_ground = 1;
+export const h_cuts = 2;
+export const h_size = 3;
 
 let tileCuts;
 
@@ -496,7 +510,9 @@ function checkNaN(value, msg)
 }
 
 
-function addHeightMap()
+const UNDEFINED_COLOR = components("#f0f");
+
+function addHeightMap(tileDefinitions)
 {
     const geometry = new BufferGeometry();
     geometry.name = "Landscape-Debug"
@@ -515,8 +531,6 @@ function addHeightMap()
 
     console.log("Height map for ", length / t_size, " tiles");
 
-    const UNDEFINED_COLOR = [1, 0, 1];
-
     // const map = {};
     //
     // const insert = (a,b) => {
@@ -533,18 +547,26 @@ function addHeightMap()
     //     map[key] =  v === undefined ? 1 : v + 1;
     // }
 
-    const getColor = (hIdx) => {
+    const getColor = (tileDefinitions, tileId) => {
 
-        const tileDataIndex = hIdx * td_size / h_size;
 
-        const ground = heightMap[hIdx + h_ground];
-        const color = GROUND_COLORS[ground];
-        // if (ground !== STONE && ground !== SAND && tileData[tileDataIndex + td_walkable])
-        // {
-        //     return GROUND_COLORS[GRASS];
-        // }
+        for (let i = 0; i < tileDefinitions.length; i++)
+        {
+            const { id, idCount, colors} = tileDefinitions[i];
 
-        return color || UNDEFINED_COLOR;
+            //console.log({id,idCount})
+
+            if (tileId >= id && tileId < id + idCount)
+            {
+                const result = components(colors[tileId - id]);
+                //console.log("Find color for ", tileId, "=>", result)
+                return result;
+            }
+        }
+
+        console.log("No color for ", tileName(tileDefinitions, tileId))
+
+        return UNDEFINED_COLOR;
     };
 
     let tileDataIndex = 0;
@@ -637,16 +659,16 @@ function addHeightMap()
         // colors.push( y3 * cf,1 - y3 * cf, 0);
         // colors.push( y2 * cf,1 - y2 * cf, 0);
 
-        const col0 = getColor(heightIndex0);
-        const col1 = getColor(heightIndex1);
-        const col2 = getColor(heightIndex2);
-        const col3 = getColor(heightIndex3);
+        const ground0 = heightMap[heightIndex0 + h_ground];
+        const ground1 = heightMap[heightIndex1 + h_ground];
+        const ground2 = heightMap[heightIndex2 + h_ground];
+        const ground3 = heightMap[heightIndex3 + h_ground];
 
         if (
-            !(col0 === GROUND_COLORS[WATER] &&
-              col1 === GROUND_COLORS[WATER] &&
-              col2 === GROUND_COLORS[WATER] &&
-              col3 === GROUND_COLORS[WATER])
+            !(ground0 === WATER &&
+              ground1 === WATER &&
+              ground2 === WATER &&
+              ground3 === WATER)
         )
         {
             vertices.push(x0, y0, z0);
@@ -665,28 +687,39 @@ function addHeightMap()
             normals.push(nx, ny, nz);
             normals.push(nx, ny, nz);
 
-            colors.push(col0[0], col0[1], col0[2]);
-            colors.push(col3[0], col3[1], col3[2]);
-            colors.push(col1[0], col1[1], col1[2]);
 
-            colors.push(col1[0], col1[1], col1[2]);
-            colors.push(col3[0], col3[1], col3[2]);
-            colors.push(col2[0], col2[1], col2[2]);
+            const col = getColor(tileDefinitions, tileData[tileDataIndex + td_tileId])
+
+            // colors.push(color0[0], color0[1], color0[2]);
+            // colors.push(color3[0], color3[1], color3[2]);
+            // colors.push(color1[0], color1[1], color1[2]);
+            //
+            // colors.push(color1[0], color1[1], color1[2]);
+            // colors.push(color3[0], color3[1], color3[2]);
+            // colors.push(color2[0], color2[1], color2[2]);
 
 
-            const mx = (x3 + x2) / 2;
-            const my = (y3 + y2) / 2;
-            const mz = (z3 + z2) / 2;
+            colors.push(col.r, col.g, col.b);
+            colors.push(col.r, col.g, col.b);
+            colors.push(col.r, col.g, col.b);
 
-            helperVertices.push(
-                (x1 + x0) / 2, (y1 + y0) / 2,(z1 + z0) / 2,
-                (x3 + mx) / 2, (y3 + my) / 2,(z3 + mz) / 2,
-                (x2 + mx) / 2, (y2 + my) / 2,(z2 + mz) / 2
-            )
+            colors.push(col.r, col.g, col.b);
+            colors.push(col.r, col.g, col.b);
+            colors.push(col.r, col.g, col.b);
 
-            helperNormals.push(nx, ny, nz);
-            helperNormals.push(nx, ny, nz);
-            helperNormals.push(nx, ny, nz);
+            // const mx = (x3 + x2) / 2;
+            // const my = (y3 + y2) / 2;
+            // const mz = (z3 + z2) / 2;
+            //
+            // helperVertices.push(
+            //     (x1 + x0) / 2, (y1 + y0) / 2,(z1 + z0) / 2,
+            //     (x3 + mx) / 2, (y3 + my) / 2,(z3 + mz) / 2,
+            //     (x2 + mx) / 2, (y2 + my) / 2,(z2 + mz) / 2
+            // )
+            //
+            // helperNormals.push(nx, ny, nz);
+            // helperNormals.push(nx, ny, nz);
+            // helperNormals.push(nx, ny, nz);
 
         }
 
@@ -700,30 +733,31 @@ function addHeightMap()
     //console.log("MAX DELTA", max);
 
     //
-    console.log({vertices, normals, colors})
+    //console.log({vertices, normals, colors})
 
     geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
     geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
     geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
 
-    // const material = new MeshStandardMaterial({
-    //     vertexColors: true,
-    //     side: DoubleSide,
-    //     roughness: 0.5
-    // });
-    // const mesh = new Mesh(geometry, material);
-    // mesh.position.set(0, -WATER_LIMIT, 0);
-    //scene.add(mesh);
+    const material = new MeshStandardMaterial({
+        vertexColors: true,
+        side: DoubleSide,
+        roughness: 0.5
+    });
+    const mesh = new Mesh(geometry, material);
+    mesh.position.set(0, -WATER_LIMIT, 0);
+    scene.add(mesh);
 
-    const wireframe = new WireframeGeometry( geometry );
+    // const wireframe = new WireframeGeometry( geometry );
+    //
+    // const line = new LineSegments( wireframe );
+    // line.material.depthTest = false;
+    // line.material.color = new Color("#000");
+    // line.material.opacity = 0.25;
+    // line.material.transparent = true;
+    // scene.add( line );
 
-    const line = new LineSegments( wireframe );
-    line.material.depthTest = false;
-    line.material.color = new Color("#000");
-    line.material.opacity = 0.25;
-    line.material.transparent = true;
-    scene.add( line );
-
+    if (helperVertices.length > 0)
     {
         const geometry = new BufferGeometry();
         geometry.setAttribute("position", new BufferAttribute(new Float32Array(helperVertices), 3, false));
@@ -777,6 +811,7 @@ function updateSun()
 
 
 let cubeCamera, sky;
+
 
 
 
@@ -907,16 +942,23 @@ function init()
 
     ////////////////
 
+    const tileDefinitions = prepareTiles(
+        null // no thumbnails please
+    );
+
+    waveFunctionCollapse(organicQuads, heightMap, tileData, tileDefinitions)
+
     if (HEIGHT_MAP)
     {
-        addHeightMap();
+        addHeightMap(tileDefinitions);
     }
     else
     {
         addMarchingSquareObjects(marchingSquaresArray);
     }
-
 }
+
+
 
 
 
@@ -1446,6 +1488,7 @@ function extractMarchingSquares(scene)
 }
 
 
+
 Promise.all([
     loadScene("assets/tiles.glb"),
     loadScene("assets/ground.glb"),
@@ -1454,7 +1497,7 @@ Promise.all([
     loadTexture("assets/waternormals.jpg")
 ])
     .then(([
-               tiles,
+               _tiles,
                ground,
                marchingSquares,
                //marchingSquaresRaised,
@@ -1462,6 +1505,7 @@ Promise.all([
            ]) => {
 
         //scene.add( tiles.scene );
+
 
         dump( ground.scene, "tiles: ")
 

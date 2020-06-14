@@ -14,7 +14,8 @@ import { Object3D } from "three"
 
 export const DEFAULT_TILES = {
         "cactus": {
-            "variants": ["cactus_short", "cactus_tall"]
+            "variants": ["cactus_short", "cactus_tall"],
+            "colors" : [ "#0c0"]
         },
         "flower": {
             "variants": [
@@ -27,35 +28,45 @@ export const DEFAULT_TILES = {
                 "flower_yellowA",
                 "flower_yellowB",
                 "flower_yellowC"
-            ]
+            ],
+            "colors" : [ "#ff0"]
         },
         "stone_large": {
-            "variants": ["stone_largeD", "stone_largeE", "stone_largeF"]
+            "variants": ["stone_largeD", "stone_largeE", "stone_largeF"],
+            "colors" : [ "#eee"]
         },
         "stone_small": {
-            "variants": ["stone_smallD"]
+            "variants": ["stone_smallD"],
+            "colors" : [ "#888"]
         },
         "palm_tree": {
-            "variants": ["tree_palmDetailedTall", "tree_palmShort", "tree_palmTall"]
+            "variants": ["tree_palmDetailedTall", "tree_palmShort", "tree_palmTall"],
+            "colors" : [ "#8c0"]
         },
         "pine": {
-            "variants": ["tree_pineRoundD", "tree_pineTallC_detailed", "tree_pineTallD"]
+            "variants": ["tree_pineRoundD", "tree_pineTallC_detailed", "tree_pineTallD"],
+            "colors" : [ "#480"]
         },
         "tree_plateau": {
-            "variants": ["tree_plateau"]
+            "variants": ["tree_plateau"],
+            "colors" : [ "#482"]
         },
         "tree_tall_dark": {
-            "variants": ["tree_tall_dark"]
+            "variants": ["tree_tall_dark"],
+            "colors" : [ "#360"]
         },
         "tree_thin": {
-            "variants": ["tree_thin"]
+            "variants": ["tree_thin"],
+            "colors" : [ "#684"]
         },
         "house": {
             "variants": ["House"],
             "sizeX" : 3,
             "sizeY" : 2,
             "sizeZ" : 3,
-            
+            "reachable": true,
+            "colors" : [ "#f00", "#00f"],
+
             "idCount" : 2,
             "pattern" : [
                 1,1,1,

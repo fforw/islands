@@ -57,6 +57,8 @@ export default function prepareTiles(tilesGLTF)
                 sizeX,
                 sizeY,
                 sizeZ,
+                reachable: raw.reachable || false,
+                pattern: raw.pattern ? raw.pattern.slice() : null,
                 variants: tilesGLTF ? tilesGLTF.scene.children.filter(o => variants.indexOf(o.name) >= 0) : variants,
                 thumbnail: null
             };
@@ -146,6 +148,8 @@ export default function prepareTiles(tilesGLTF)
             sizeX: 1,
             sizeY: 0.1,
             sizeZ: 1,
+            reachable:false,
+            colors: ["#000"],
             thumbnail: null
         });
 

@@ -1,5 +1,6 @@
 import { DoubleSide, Group, Mesh, PlaneBufferGeometry, Scene } from "three";
 import { DIRT, TAU } from "../constants";
+import { tileName } from "../util/inputToWFC";
 
 export const TILE_SIZE = 1;
 
@@ -116,7 +117,7 @@ export default class Grid
         const matOff = material * gridSize * gridSize;
 
         const clean = !cleanFn;
-        const indexes = !clean && new Array(sizeX * sizeZ);
+        const indexes = !clean && new Uint32Array(sizeX * sizeZ);
 
         // correction of line plus rotated vector
         const lineDx = - dx * sizeX - dy;

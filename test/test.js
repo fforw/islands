@@ -19,6 +19,7 @@ describe("Input Rules", function(){
 
 	    loadInstanceJSON(inputData, tiles, grid);
 
+	    //console.log(JSON.stringify([ ... grid.data ]))
 
         assert.deepEqual(
             array,

@@ -37,7 +37,6 @@ export default function loadInstanceJSON(data, tiles, grid, instances, scene)
             );
 
             instance.variant = (Math.random() * tile.variants.length)|0;
-            instance.indexes = raw.indexes;
 
             instance.indexes = grid.setTile(instance.material, instance.x, instance.y, instance.tile, instance.rotation, true);
 

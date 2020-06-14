@@ -25,6 +25,9 @@ export function tileName(tiles, tileId)
     return "ERR:" + tileId;
 }
 
+let tmpMask;
+
+
 
 
 export default function inputToWFC(inputData, size, tiles, weightTargets)
@@ -33,6 +36,11 @@ export default function inputToWFC(inputData, size, tiles, weightTargets)
 
     // how many ints do we need to express a bitmask of with all possible tile states?
     const numInts = (maxId + 31) >> 5;
+
+    if (!tmpMask || tmpMask.length < numInts)
+    {
+        tmpMask = new Uint32Array(numInts);
+    }
 
     const grid = new Grid(size);
     loadInstanceJSON(inputData, tiles, grid);
@@ -45,7 +53,7 @@ export default function inputToWFC(inputData, size, tiles, weightTargets)
         const index = tileB >> 5;
         const bit = 1 << (tileB - (index << 5));
 
-        const offset = mat * maxId * numInts + tileA * numInts + index;
+        const offset = mat * numEntries * numInts + tileA * numInts + index;
         const value = adjacencies[offset ];
         const changed = value | bit;
         if (value !== changed)
@@ -61,7 +69,7 @@ export default function inputToWFC(inputData, size, tiles, weightTargets)
     const numWeights = numMaterials * numEntries;
     const weights = new Uint32Array( numWeights);
 
-    const numAdjacencies = numMaterials * maxId * numInts;
+    const numAdjacencies = numMaterials * numEntries * numInts;
     const adjacencies = new Uint32Array(numAdjacencies);
 
     for (let mat = 0; mat < numMaterials; mat++)
@@ -70,11 +78,11 @@ export default function inputToWFC(inputData, size, tiles, weightTargets)
         {
             for (let x = 0; x < size; x++)
             {
-                const tile = grid.data[index];
+                const tileId = grid.data[index];
 
-                if (tile !== 0)
+                if (tileId !== 0)
                 {
-                    weights[mat * numEntries + 1 + tile]++;
+                    weights[mat * numEntries + 1 + tileId]++;
                 }
 
                 const top = y === 0 ? 0 : grid.data[index - size];
@@ -82,34 +90,54 @@ export default function inputToWFC(inputData, size, tiles, weightTargets)
                 const bottom = y === last ? 0 : grid.data[index + size];
                 const left = x === 0 ? 0 : grid.data[index - 1];
 
-                add(adjacencies, mat, tile, top)
-                add(adjacencies, mat, tile, right)
-                add(adjacencies, mat, tile, bottom)
-                add(adjacencies, mat, tile, left)
+                add(adjacencies, mat, tileId, top)
+                add(adjacencies, mat, tileId, right)
+                add(adjacencies, mat, tileId, bottom)
+                add(adjacencies, mat, tileId, left)
                 index++;
             }
         }
     }
 
+
     index = 0;
     for (let i=0; i < numMaterials; i++)
     {
+        tmpMask.fill(0)
         let sum = 0;
-        for (let j = 1; j < maxId; j++)
+        for (let j = 0; j < maxId; j++)
         {
-            sum += weights[index + 1 + j];
+            const value = weights[index + 1 + j];
+            if (value > 0 || j === 0)
+            {
+                sum += value;
+
+                const index = j >> 5;
+                const bit = 1 << (j - (index << 5));
+                tmpMask[index] |= bit;
+            }
         }
+        const offset = i * numEntries * numInts + maxId * numInts;
+
         if (sum === 0)
         {
             weights[index + 1] = 1;
             weights[index] = 1;
+
+            tmpMask[0] |= 1;
+
         }
         else
         {
-            const emptyWeight = sum * weightTargets[i];
+            const r = weightTargets[i] / ( 1- weightTargets[i])
+
+            const emptyWeight = sum * r;
             weights[index + 1] = emptyWeight;
             weights[index] = sum + emptyWeight;
         }
+
+        adjacencies.set(tmpMask, offset);
+
         index += numEntries
     }
 
