@@ -21,10 +21,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Sky } from "three/examples/jsm/objects/Sky";
 import EditorUI from "./EditorUI";
 import EditorState from "./EditorState";
-import { reaction } from "mobx";
+import { configure, reaction } from "mobx";
 import "mobx-react-lite/batchingForReactDom"
-import threeJsThumbnailer from "../util/threeJsThumbnailer";
-import { DEFAULT_TILES } from "./default-tiles";
 import Cursor from "./Cursor";
 import TileInstance from "./TileInstance";
 
@@ -33,10 +31,8 @@ import download from "../util/download";
 import loadInstanceJSON from "./loadInstanceJSON";
 import prepareTiles from "./prepareTiles";
 
-const TAU = Math.PI * 2;
 
-// maximum coverage a tile kind can have in the editor.
-const TILE_MAXIMUM = 0.5;
+const TAU = Math.PI * 2;
 
 const GRID_SIZE = 12;
 
@@ -224,8 +220,6 @@ function getCurrentInstancesAsJSON()
 }
 
 let history = [];
-let historyPos = 0;
-let historyEnd = 0;
 
 let timerId;
 
@@ -303,10 +297,14 @@ function addHistoryEntry(added, removed)
         removed
     };
 
-    if (historyPos < HISTORY_LIMIT)
+    let { historyPos, historyEnd } = editorState;
+
+    if (editorState.historyPos < HISTORY_LIMIT)
     {
         history[historyPos++] = newEntry;
         historyEnd = historyPos;
+
+        editorState.updateHistory(historyPos, historyEnd)
     }
     else
     {
@@ -321,9 +319,23 @@ function addHistoryEntry(added, removed)
 
 }
 
+function canRedo()
+{
+    const { historyPos, historyEnd } = editorState;
+    return historyPos < historyEnd;
+}
+
+function canUndo()
+{
+    const { historyPos } = editorState;
+    return historyPos > 0;
+}
+
 function redo()
 {
-    if (historyPos < historyEnd)
+    let { historyPos } = editorState;
+
+    if (canRedo())
     {
         //console.log("REDO", history, historyPos)
 
@@ -351,15 +363,20 @@ function redo()
 
         debouncedSync();
 
+        editorState.updateHistory(historyPos);
+
     }
 }
 
 
 function undo()
 {
-    if (historyPos > 0)
+    if (canUndo())
     {
         //console.log("UNDO")
+
+        let { historyPos } = editorState;
+
 
         const { added, removed } = history[--historyPos];
 
@@ -382,6 +399,8 @@ function undo()
         }
 
         debouncedSync();
+
+        editorState.updateHistory(historyPos);
 
     }
 }
@@ -554,6 +573,12 @@ Promise.all([
         renderUI().then(mainLoop);
     })
 
+
+// set MobX configuration
+configure({
+    enforceActions: "observed"
+});
+
 const editorState = new EditorState(tiles);
 
 reaction(
@@ -659,6 +684,10 @@ function renderUI()
                         download={ () => {
                             download("input.json", getCurrentInstancesAsJSON(), "text/json");
                         }}
+                        undo={ undo }
+                        canUndo={ canUndo }
+                        redo={ redo }
+                        canRedo={ canRedo }
                     />,
                     uiContainer,
                     resolve

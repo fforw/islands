@@ -25,12 +25,27 @@ export default class EditorState
     dirty = false;
 
     @observable
+    historyPos = 0;
+    @observable
+    historyEnd = 0;
+
+    @observable
     activeTileIndex = 0;
 
     @action
     toggleVisible(value = !this.visible)
     {
         this.visible = value;
+    }
+
+    @action
+    updateHistory(historyPos, historyEnd = null)
+    {
+        this.historyPos = historyPos;
+        if (historyEnd !== null)
+        {
+            this.historyEnd = historyEnd;
+        }
     }
 
 

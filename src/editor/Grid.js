@@ -142,7 +142,7 @@ export default class Grid
                 }
                 else
                 {
-                    if (this.data[offset] !== 0)
+                    if (this.data[offset] !== value)
                     {
                         if (typeof cleanFn === "function")
                         {

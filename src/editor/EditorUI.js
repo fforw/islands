@@ -39,7 +39,7 @@ const SizeBadge = memo(({sizeX, sizeY }) => {
     )
 })
 
-const EditorUI = observer(({ editorState, download, clearAll }) =>
+const EditorUI = observer(({ editorState, download, clearAll, undo, canUndo, redo, canRedo }) =>
 {
     const { tiles, visible, activeTileIndex, activeTile, dirty } = editorState;
 
@@ -78,6 +78,32 @@ const EditorUI = observer(({ editorState, download, clearAll }) =>
                         </div>
                     </div>
                     <div className="row">
+                        <div className="col">
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-secondary mr-1 mb-1"
+                                disabled={!canUndo()}
+                                onClick={ undo }
+                            >
+                                <i
+                                    className="fas fa-undo mr-1"
+                                />
+                                Undo
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-secondary mr-1 mb-1"
+                                disabled={!canRedo()}
+                                onClick={ redo }
+                            >
+                                <i
+                                    className="fas fa-redo mr-1"
+                                />
+                                Redo
+                            </button>
+                        </div>
+                    </div>
+                    <div className="row">
                         <div className="tile-selector flex">
                             {
                                 tiles.map( (tile,idx) => (
@@ -100,14 +126,14 @@ const EditorUI = observer(({ editorState, download, clearAll }) =>
                             />
                             <button
                                 type="button"
-                                className="btn btn-sm btn-secondary mr-1"
+                                className="btn btn-sm btn-secondary mr-1 mb-1"
                                 onClick={ download }
                                 >
                                 Download JSON
                             </button>
                             <button
                                 type="button"
-                                className="btn btn-sm btn-danger mr-1"
+                                className="btn btn-sm btn-danger mr-1 mb-1"
                                 onClick={ () =>{
                                     if (confirm("Do you really want to delete all tiles?"))
                                     {

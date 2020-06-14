@@ -65,13 +65,17 @@ export const DEFAULT_TILES = {
             "sizeY" : 2,
             "sizeZ" : 3,
             "reachable": true,
-            "colors" : [ "#f00", "#00f"],
+            "colors" : ["#f00"],
 
-            "idCount" : 2,
+            "idCount" : 1,
+
+            /**
+             * Complex pattern (negative values are local ids: -1 = id, -2 = id +1 etc)
+             */
             "pattern" : [
-                1,1,1,
-                1,0,1,
-                1,1,1
+                0, 0, 0,
+                0,-1, 0,
+                0, 0, 0
             ]
         }
     }

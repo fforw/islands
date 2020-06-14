@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "timestamp": "2020-06-13T16:10:38.427Z",
+    "timestamp": "2020-06-14T22:28:21.741Z",
     "instances": [
         {
             "name": "stone_small",
@@ -56,17 +56,6 @@
             "material": 4,
             "x": 3,
             "y": 5
-        },
-        {
-            "name": "cactus",
-            "position": [
-                -3.5,
-                0,
-                7.5
-            ],
-            "material": 1,
-            "x": 8,
-            "y": 7
         },
         {
             "name": "tree_thin",
@@ -421,17 +410,6 @@
             "y": 7
         },
         {
-            "name": "palm_tree",
-            "position": [
-                -7.5,
-                0,
-                5.5
-            ],
-            "material": 1,
-            "x": 4,
-            "y": 5
-        },
-        {
             "name": "house",
             "position": [
                 -20.5,
@@ -443,39 +421,6 @@
             "y": 2
         },
         {
-            "name": "house",
-            "position": [
-                -15.5,
-                0,
-                6.5
-            ],
-            "material": 2,
-            "x": 7,
-            "y": 5
-        },
-        {
-            "name": "flower",
-            "position": [
-                -14.5,
-                0,
-                10.5
-            ],
-            "material": 2,
-            "x": 9,
-            "y": 10
-        },
-        {
-            "name": "flower",
-            "position": [
-                -14.5,
-                0,
-                9.5
-            ],
-            "material": 2,
-            "x": 9,
-            "y": 9
-        },
-        {
             "name": "stone_small",
             "position": [
                 -22.5,
@@ -485,17 +430,6 @@
             "material": 2,
             "x": 1,
             "y": 3
-        },
-        {
-            "name": "cactus",
-            "position": [
-                -11.5,
-                0,
-                4.5
-            ],
-            "material": 1,
-            "x": 0,
-            "y": 4
         },
         {
             "name": "pine",
@@ -517,28 +451,6 @@
             ],
             "material": 3,
             "x": 3,
-            "y": 9
-        },
-        {
-            "name": "flower",
-            "position": [
-                -16.5,
-                0,
-                10.5
-            ],
-            "material": 2,
-            "x": 7,
-            "y": 10
-        },
-        {
-            "name": "flower",
-            "position": [
-                -16.5,
-                0,
-                9.5
-            ],
-            "material": 2,
-            "x": 7,
             "y": 9
         },
         {
@@ -605,6 +517,127 @@
             ],
             "material": 2,
             "x": 5,
+            "y": 9
+        },
+        {
+            "name": "cactus",
+            "position": [
+                -11.5,
+                0,
+                4.5
+            ],
+            "material": 1,
+            "x": 0,
+            "y": 4
+        },
+        {
+            "name": "palm_tree",
+            "position": [
+                -7.5,
+                0,
+                5.5
+            ],
+            "material": 1,
+            "x": 4,
+            "y": 5
+        },
+        {
+            "name": "tree_thin",
+            "position": [
+                -13.5,
+                0,
+                8.5
+            ],
+            "material": 2,
+            "x": 10,
+            "y": 8
+        },
+        {
+            "name": "tree_plateau",
+            "position": [
+                -15.5,
+                0,
+                10.5
+            ],
+            "material": 2,
+            "x": 8,
+            "y": 10
+        },
+        {
+            "name": "stone_small",
+            "position": [
+                -14.5,
+                0,
+                5.5
+            ],
+            "material": 2,
+            "x": 9,
+            "y": 5
+        },
+        {
+            "name": "flower",
+            "position": [
+                -23.5,
+                0,
+                6.5
+            ],
+            "material": 2,
+            "x": 0,
+            "y": 6
+        },
+        {
+            "name": "flower",
+            "position": [
+                -23.5,
+                0,
+                7.5
+            ],
+            "material": 2,
+            "x": 0,
+            "y": 7
+        },
+        {
+            "name": "flower",
+            "position": [
+                -21.5,
+                0,
+                10.5
+            ],
+            "material": 2,
+            "x": 2,
+            "y": 10
+        },
+        {
+            "name": "flower",
+            "position": [
+                -22.5,
+                0,
+                10.5
+            ],
+            "material": 2,
+            "x": 1,
+            "y": 10
+        },
+        {
+            "name": "palm_tree",
+            "position": [
+                -3.5,
+                0,
+                8.5
+            ],
+            "material": 1,
+            "x": 8,
+            "y": 8
+        },
+        {
+            "name": "palm_tree",
+            "position": [
+                -7.5,
+                0,
+                9.5
+            ],
+            "material": 1,
+            "x": 4,
             "y": 9
         }
     ]

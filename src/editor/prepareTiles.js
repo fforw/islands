@@ -49,17 +49,16 @@ export default function prepareTiles(tilesGLTF)
             const raw = DEFAULT_TILES[name];
             const { variants, sizeX = 1, sizeY = 1, sizeZ = 1 } = raw;
             tiles[pos] = {
-                ... raw,
-                
                 id: -1,
-                idCount: raw.idCount || 1,
                 name,
+                ... raw,
+                variants: tilesGLTF ? tilesGLTF.scene.children.filter(o => variants.indexOf(o.name) >= 0) : variants,
+                pattern: raw.pattern ? raw.pattern.slice() : null,
+                idCount: raw.idCount || 1,
                 sizeX,
                 sizeY,
                 sizeZ,
                 reachable: raw.reachable || false,
-                pattern: raw.pattern ? raw.pattern.slice() : null,
-                variants: tilesGLTF ? tilesGLTF.scene.children.filter(o => variants.indexOf(o.name) >= 0) : variants,
                 thumbnail: null
             };
             pos++;
@@ -77,7 +76,7 @@ export default function prepareTiles(tilesGLTF)
         t.id = idCounter;
         idCounter += idCount;
 
-        if (idCount > 1)
+        if (t.pattern)
         {
             if (!pattern || !Array.isArray(pattern))
             {
@@ -92,7 +91,13 @@ export default function prepareTiles(tilesGLTF)
 
             for (let i = 0; i < pattern.length; i++)
             {
-                pattern[i] += t.id;
+                // if the pattern in the JSON is negative
+                if (pattern[i] < 0)
+                {
+                    // we use the local id backwards starting with -1 basically
+                    pattern[i] = -pattern[i] - 1 + t.id;
+                }
+
             }
         }
         else
@@ -125,9 +130,9 @@ export default function prepareTiles(tilesGLTF)
 
             tiles.unshift({
                 id: 0,
-                idCount: 1,
                 name: "empty",
                 variants: [],
+                idCount: 1,
                 sizeX: 1,
                 sizeY: 0.1,
                 sizeZ: 1,
@@ -142,9 +147,9 @@ export default function prepareTiles(tilesGLTF)
     {
         tiles.unshift({
             id: 0,
-            idCount: 1,
             name: "empty",
             variants: [],
+            idCount: 1,
             sizeX: 1,
             sizeY: 0.1,
             sizeZ: 1,
