@@ -6,21 +6,23 @@ import STYLE from "./style.css"
 import {
     BufferAttribute,
     BufferGeometry,
+    Color,
     CubeCamera,
     DirectionalLight,
     DoubleSide,
     Float32BufferAttribute,
     FrontSide,
     Mesh,
+    MeshBasicMaterial,
     MeshStandardMaterial,
     Object3D,
     PerspectiveCamera,
     PlaneBufferGeometry,
     RepeatWrapping,
-    Scene, sRGBEncoding,
+    Scene,
+    sRGBEncoding,
     Vector3,
-    Color,
-    WebGLRenderer, MeshBasicMaterial, WireframeGeometry, LineSegments
+    WebGLRenderer
 } from "three"
 
 import OrganicQuads, {
@@ -43,31 +45,17 @@ import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import Stats from "three/examples/jsm/libs/stats.module";
 import loadTexture from "./loadTexture";
 import { heightLimit } from "./heightLimit";
-import {
-    CASE_NAMES,
-    FOREST,
-    GRASS,
-    GROUND_COLORS,
-    MATERIAL_NAMES,
-    PHI,
-    SAND,
-    STONE,
-    UNDEFINED,
-    WATER
-} from "./constants";
+import { CASE_NAMES, FOREST, GRASS, MATERIAL_NAMES, SAND, STONE, UNDEFINED, WATER } from "./constants";
 
-import prepareTiles, { getMaxId } from "./editor/prepareTiles";
-import inputToWfc, { tileName } from "./util/inputToWFC";
-import { numMaterials } from "./editor/Grid";
-
-
+import prepareTiles from "./editor/prepareTiles";
+import { tileName } from "./util/inputToWFC";
 
 import { dump } from "./util/dump";
 import waveFunctionCollapse from "./util/waveFunctionCollapse";
 import { components } from "./util/color";
+
 
 const SKY_EFFECT = true;
 const WATER_EFFECT = false;
@@ -81,7 +69,7 @@ const NOISE_SCALE_2 = 0.07;
 const NOISE_SCALE_3 = 0.0007;
 const GROUND_NOISE_SCALE = 0.005;
 const NOISE_RATIO = 0.99;
-const CLIFF_THRESHOLD = 10;
+const CLIFF_THRESHOLD = 14;
 
 // size of the outer square around our big hexagon
 const SIZE = 1500;
@@ -91,7 +79,7 @@ const SIZE = 1500;
 const NUM_MATERIALS = 7;
 
 const WATER_LIMIT = 2;
-const SAND_LIMIT = 5.7;
+const SAND_LIMIT = 6.5;
 const FOREST_LIMIT = 60;
 
 let container, stats;
@@ -152,7 +140,7 @@ function heightFn(x0, z0)
 {
     const distance = Math.sqrt(x0 * x0 + z0 * z0);
 
-    const w = noise.noise2D(x0 * NOISE_SCALE_3, mOffset + z0 * NOISE_SCALE_3) < 0.1 ? 0 : 0.6
+    const w = 0; //noise.noise2D(x0 * NOISE_SCALE_3, mOffset + z0 * NOISE_SCALE_3) < 0.1 ? 0 : 0.6
 
     const limit = heightLimit(1 - distance / (SIZE / 2), w);
 
@@ -175,6 +163,7 @@ function cutCliffs()
     const tileCuts = [];
 
     const cutNodes = new Set();
+
 
     for (let i = 0; i < length; i += t_size)
     {

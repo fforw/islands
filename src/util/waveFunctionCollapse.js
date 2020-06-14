@@ -20,10 +20,10 @@ import printMask from "./printMask";
 
 const WEIGHT_TARGETS = [
     1, // WATER
-    0.8, // SAND
-    0.3, // GRASS
+    0.95, // SAND
+    0.5, // GRASS
     0.1, // FOREST
-    0.6, // STONE
+    0.8, // STONE
     1, // ICE
     1, // DIRT
     1, // PACKED_ICE
