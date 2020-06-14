@@ -241,6 +241,8 @@ function cutCliffs()
                     tileData[tileDataIndex + td_cut0 + cut0] = height;
                     tileData[tileDataIndex + td_cut0 + cut1] = height;
 
+                    //console.log("cut", tileDataIndex + td_cut0 + cut0, tileDataIndex + td_cut0 + cut1)
+
                     const rnd = Math.random();
                     if (rnd < 0.2)
                     {
@@ -310,6 +312,8 @@ function cutCliffs()
         }
     }
 
+    const cutTiles = new Set();
+
     for (let cut of cutNodes)
     {
 
@@ -322,6 +326,8 @@ function cutCliffs()
                 {
                     const tileDataIndex = i * tileDataFactor;
 
+                    cutTiles.add(i);
+
                     if (tileData[tileDataIndex + td_cut0 + j] === -1)
                     {
                         tileData[tileDataIndex + td_cut0 + j] = heightFn(tileData[tileDataIndex + td_cx], tileData[tileDataIndex + td_cy])
@@ -331,8 +337,10 @@ function cutCliffs()
         }
     }
 
+    console.log("Tiles cut:", cutTiles.size, " of ", tileData.length / td_size)
 
-    return tileCuts;
+
+    return { tileCuts, cutTiles };
 }
 
 const tc_case = 0;
@@ -385,12 +393,13 @@ function createScene()
 
     tileData = new Float64Array((organicQuads.tiles.length / t_size) * td_size);
     updateCentroids()
-    tileCuts = cutCliffs()
+    const cutData = cutCliffs();
+    const { cutTiles, tileCuts : _tileCuts } = cutData;
 
-    console.log({tileCuts: group(tileCuts, tc_size)})
+    tileCuts = _tileCuts;
 
-    testWalkability();
     generateGround();
+    testWalkability(cutTiles);
 
 }
 
@@ -445,14 +454,14 @@ function generateGround()
 }
 
 
-function testWalkability()
+function testWalkability(cutTiles)
 {
     const tileIndex = findEdgeTile();
 
     console.log("Starting to walk at #", tileIndex / t_size)
 
     const visited = new Set();
-    walkRecursive(tileIndex, visited);
+    walkRecursive(tileIndex, visited, cutTiles);
 }
 
 
@@ -476,21 +485,26 @@ function findEdgeTile()
 const tileDataFactor = td_size / t_size;
 
 
-function walkRecursive(tileIndex, visited)
+function walkRecursive(tileIndex, visited, cutTiles)
 {
     if (tileIndex >= 0 && !visited.has(tileIndex))
     {
+        if (cutTiles.has(tileIndex))
+        {
+            //  console.log(tileIndex, "has been cut, ignoring..");
+            return;
+        }
+
         visited.add(tileIndex);
 
-        const {tiles} = organicQuads;
+        const { tiles } = organicQuads;
 
         tileData[tileIndex * tileDataFactor + td_walkable] = 1;
 
-        walkRecursive(tiles[tileIndex + t_tile0], visited);
-        walkRecursive(tiles[tileIndex + t_tile1], visited);
-        walkRecursive(tiles[tileIndex + t_tile2], visited);
-        walkRecursive(tiles[tileIndex + t_tile3], visited);
-
+        walkRecursive(tiles[tileIndex + t_tile0], visited, cutTiles);
+        walkRecursive(tiles[tileIndex + t_tile1], visited, cutTiles);
+        walkRecursive(tiles[tileIndex + t_tile2], visited, cutTiles);
+        walkRecursive(tiles[tileIndex + t_tile3], visited, cutTiles);
     }
 }
 
