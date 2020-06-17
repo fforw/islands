@@ -77,7 +77,11 @@ export const DEFAULT_TILES = {
                 0,-1, 0,
                 0, 0, 0
             ]
-        }
+        },
+        // "cube": {
+        //     "variants": ["tree_thin"],
+        //     "colors" : [ "#684"]
+        // },
     }
 ;
 

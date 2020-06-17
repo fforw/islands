@@ -14,7 +14,7 @@ import {
     Vector3,
     WebGLRenderer
 } from "three"
-import loadScene from "../loadScene";
+import loadScene from "../util/loadScene";
 import { MATERIAL_NAMES } from "../constants";
 import Grid, { TILE_SIZE } from "./Grid";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -68,6 +68,7 @@ function getWidth()
 }
 
 
+let mouse = new Vector2(100,0)
 function onDocumentMouseMove( event ) {
 
     event.preventDefault();
@@ -76,7 +77,6 @@ function onDocumentMouseMove( event ) {
     mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
 }
-let mouse = new Vector2(100,0)
 
 function onWindowResize()
 {

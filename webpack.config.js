@@ -25,7 +25,8 @@ module.exports = {
         "editor": "./src/editor/editor.js",
         "test": "./src/test-projection.js",
         "height": "./src/test-height-limit.js",
-        "thumb": "./src/test-thumb.js"
+        "thumb": "./src/test-thumb.js",
+        "morph": "./src/test-morph.js"
     },
 
     devtool: "source-map",
@@ -72,9 +73,9 @@ module.exports = {
 
         new HtmlWebpackPlugin({
             inject: "body",
-            chunks: ["vendors", "thumb"],
+            chunks: ["vendors", "morph"],
             template: "src/template.html",
-            filename: "thumb.html"
+            filename: "mighty-morphing-power-shader.html"
         }),
 
         new MiniCssExtractPlugin({

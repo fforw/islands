@@ -2,14 +2,19 @@
 export default class InstancedMeshSet
 {
 
-    imported;
+    imported = new Map();
 
     instancedMeshes;
 
     constructor(gltf, names)
     {
-        this.imported = gltf.children
-            .filter( kid => names.indexOf(kid.name) >= 0);
+        gltf.children
+            .filter(
+                kid => names.indexOf(kid.name) >= 0
+            )
+            .forEach(
+                kid => this.imported.set(kid.name, kid)
+            );
 
         
     }

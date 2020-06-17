@@ -1,7 +1,7 @@
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
 import { Box3, Color, DirectionalLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from "three"
-import loadScene from "./loadScene";
+import loadScene from "./util/loadScene";
 import { Sky } from "three/examples/jsm/objects/Sky";
 import threeJsThumbnailer from "./util/threeJsThumbnailer";
 

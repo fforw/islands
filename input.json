@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "timestamp": "2020-06-14T22:28:21.741Z",
+    "timestamp": "2020-06-15T19:30:37.781Z",
     "instances": [
         {
             "name": "stone_small",
@@ -168,28 +168,6 @@
             "y": 7
         },
         {
-            "name": "flower",
-            "position": [
-                -14.5,
-                0,
-                1.5
-            ],
-            "material": 2,
-            "x": 9,
-            "y": 1
-        },
-        {
-            "name": "flower",
-            "position": [
-                -14.5,
-                0,
-                2.5
-            ],
-            "material": 2,
-            "x": 9,
-            "y": 2
-        },
-        {
             "name": "tree_plateau",
             "position": [
                 -20.5,
@@ -210,17 +188,6 @@
             "material": 2,
             "x": 3,
             "y": 1
-        },
-        {
-            "name": "stone_small",
-            "position": [
-                -13.5,
-                0,
-                -4.5
-            ],
-            "material": 3,
-            "x": 10,
-            "y": 7
         },
         {
             "name": "stone_large",
@@ -247,17 +214,6 @@
         {
             "name": "flower",
             "position": [
-                -18.5,
-                0,
-                -3.5
-            ],
-            "material": 3,
-            "x": 5,
-            "y": 8
-        },
-        {
-            "name": "flower",
-            "position": [
                 -20.5,
                 0,
                 -5.5
@@ -265,17 +221,6 @@
             "material": 3,
             "x": 3,
             "y": 6
-        },
-        {
-            "name": "flower",
-            "position": [
-                -20.5,
-                0,
-                -7.5
-            ],
-            "material": 3,
-            "x": 3,
-            "y": 4
         },
         {
             "name": "flower",
@@ -331,17 +276,6 @@
             "material": 3,
             "x": 3,
             "y": 3
-        },
-        {
-            "name": "stone_small",
-            "position": [
-                -18.5,
-                0,
-                -9.5
-            ],
-            "material": 3,
-            "x": 5,
-            "y": 2
         },
         {
             "name": "stone_small",
@@ -474,28 +408,6 @@
             "material": 2,
             "x": 6,
             "y": 5
-        },
-        {
-            "name": "flower",
-            "position": [
-                -16.5,
-                0,
-                1.5
-            ],
-            "material": 2,
-            "x": 7,
-            "y": 1
-        },
-        {
-            "name": "flower",
-            "position": [
-                -17.5,
-                0,
-                1.5
-            ],
-            "material": 2,
-            "x": 6,
-            "y": 1
         },
         {
             "name": "flower",
@@ -639,6 +551,17 @@
             "material": 1,
             "x": 4,
             "y": 9
+        },
+        {
+            "name": "flower",
+            "position": [
+                -18.5,
+                0,
+                -3.5
+            ],
+            "material": 3,
+            "x": 5,
+            "y": 8
         }
     ]
 }

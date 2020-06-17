@@ -3,6 +3,7 @@ import { numMaterials } from "../editor/Grid";
 import { ICE, MATERIAL_NAMES, WATER } from "../constants";
 import inputToWfc, { tileName } from "./inputToWFC";
 import inputData from "../../input.json";
+
 import {
     h_ground,
     h_size,
@@ -22,8 +23,8 @@ const WEIGHT_TARGETS = [
     1, // WATER
     0.95, // SAND
     0.5, // GRASS
-    0.1, // FOREST
-    0.8, // STONE
+    0.2, // FOREST
+    0.98, // STONE
     1, // ICE
     1, // DIRT
     1, // PACKED_ICE
@@ -254,6 +255,11 @@ function createTileIdReachableLookup(maxId, tileDefinitions)
 }
 
 
+let lowest;
+let choices;
+
+
+
 export default function waveFunctionCollapse(organicQuads, heightMap, tileData, tileDefinitions)
 {
     const { tiles } = organicQuads;
@@ -269,6 +275,14 @@ export default function waveFunctionCollapse(organicQuads, heightMap, tileData, 
     if (!wfcData)
     {
         wfcData = inputToWfc(inputData, 12, tileDefinitions, WEIGHT_TARGETS);
+
+        const { weights, adjacencies } =  wfcData;
+
+        console.log(
+            "weights", [... weights],
+            "adjacencies", [... adjacencies],
+
+        )
 
         // const { adjacencies } =  wfcData;
         //
@@ -290,12 +304,20 @@ export default function waveFunctionCollapse(organicQuads, heightMap, tileData, 
     let tileWasCollapsed = false;
 
     let count = (tiles.length / t_size);
-    let lowest = [];
+
+    if (!lowest || lowest.length < count)
+    {
+        lowest = new Float64Array((count+1)|0)
+    }
+
+    if (!choices || choices.length < maxId)
+    {
+        choices = new Uint32Array(maxId * 2);
+    }
+
     let lowCount;
-    let choices = [];
     let choiceCount;
     let remainingWeightSum;
-
 
     do
     {
@@ -376,7 +398,7 @@ export default function waveFunctionCollapse(organicQuads, heightMap, tileData, 
 
         // choose from remaining choices
 
-        if (choiceCount === 1)
+        if (choiceCount === 2)
         {
             choice = choices[1];
         }
@@ -399,7 +421,7 @@ export default function waveFunctionCollapse(organicQuads, heightMap, tileData, 
         }
         //console.log("Choose ", tileName(tileDefinitions, choice), " for ", tileDataIndex / td_size)
 
-        tileData[tileDataIndex + td_tileId ] = choice;
+        tileData[tileDataIndex + td_tileId ] = choice //|| 0;
         tileData[tileDataIndex + td_collapsed ] = 1;
 
         tileWasCollapsed = true;

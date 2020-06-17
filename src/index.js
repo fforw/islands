@@ -3,6 +3,7 @@ import Prando from "prando";
 import SimplexNoise from "simplex-noise"
 // noinspection ES6UnusedImports
 import STYLE from "./style.css"
+import perfNow from "performance-now"
 import {
     BufferAttribute,
     BufferGeometry,
@@ -40,12 +41,12 @@ import OrganicQuads, {
     t_tile2,
     t_tile3
 } from "@fforw/organic-quads";
-import loadScene from "./loadScene";
+import loadScene from "./util/loadScene";
 import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import loadTexture from "./loadTexture";
+import loadTexture from "./util/loadTexture";
 import { heightLimit } from "./heightLimit";
 import { CASE_NAMES, FOREST, GRASS, MATERIAL_NAMES, SAND, STONE, UNDEFINED, WATER } from "./constants";
 
@@ -62,14 +63,14 @@ const WATER_EFFECT = false;
 const HEIGHT_MAP = true;
 
 const DETAIL = 15;
-const MAX_HEIGHT = 300;
+const MAX_HEIGHT = 250;
 const QUARTER_HEIGHT = MAX_HEIGHT / 4;
 const NOISE_SCALE_1 = 0.003;
 const NOISE_SCALE_2 = 0.07;
 const NOISE_SCALE_3 = 0.0007;
 const GROUND_NOISE_SCALE = 0.005;
 const NOISE_RATIO = 0.99;
-const CLIFF_THRESHOLD = 14;
+const CLIFF_THRESHOLD = 7;
 
 // size of the outer square around our big hexagon
 const SIZE = 1500;
@@ -348,12 +349,13 @@ let tileCuts;
 
 function createScene()
 {
+    tOrganicQuadsStart = perfNow();
 
     organicQuads = new OrganicQuads({
         numberOfRings: DETAIL,
         width: SIZE,
         height: SIZE,
-        graphUserData: 1,
+        minTension: 10,
         // weightFunction: (x0,y0,x1,y1) => {
         //
         //     const dx = x1 - x0;
@@ -949,7 +951,11 @@ function init()
         null // no thumbnails please
     );
 
+    tWFC = perfNow();
+
     waveFunctionCollapse(organicQuads, heightMap, tileData, tileDefinitions)
+
+    tWFCEnd = perfNow();
 
     if (HEIGHT_MAP)
     {
@@ -1490,7 +1496,10 @@ function extractMarchingSquares(scene)
     return array;
 }
 
-
+let tStart;
+let tOrganicQuadsStart;
+let tWFC;
+let tWFCEnd;
 
 Promise.all([
     loadScene("assets/tiles.glb"),
@@ -1509,6 +1518,7 @@ Promise.all([
 
         //scene.add( tiles.scene );
 
+        tStart = perfNow();
 
         dump( ground.scene, "tiles: ")
 
@@ -1548,6 +1558,16 @@ Promise.all([
         // )
 
         init();
+
+        const end = perfNow();
+
+        console.log("Init: ", (tOrganicQuadsStart-tStart),"ms");
+        console.log("Organic Quads: ", (tWFCEnd-tOrganicQuadsStart),"ms");
+        console.log("WFC: ", (tWFCEnd-tWFC),"ms");
+        console.log("geo: ", (end-tWFCEnd),"ms");
+        console.log("Total: ", (end-tStart),"ms");
+
+
         mainLoop();
     })
 

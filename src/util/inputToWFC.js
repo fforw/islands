@@ -22,6 +22,11 @@ export function tileName(tiles, tileId)
         }
     }
 
+    if (isNaN(tileId))
+    {
+        debugger;
+    }
+
     return "ERR:" + tileId;
 }
 
