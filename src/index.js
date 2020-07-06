@@ -46,6 +46,7 @@ import { Water } from "three/examples/jsm/objects/Water.js";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { ParametricGeometries } from "three/examples/jsm/geometries/ParametricGeometries";
 import loadTexture from "./util/loadTexture";
 import { heightLimit } from "./heightLimit";
 import { CASE_NAMES, FOREST, GRASS, MATERIAL_NAMES, SAND, STONE, UNDEFINED, WATER } from "./constants";
@@ -60,7 +61,7 @@ import { components } from "./util/color";
 
 const SKY_EFFECT = true;
 const WATER_EFFECT = false;
-const HEIGHT_MAP = true;
+const HEIGHT_MAP = false;
 
 const DETAIL = 15;
 const MAX_HEIGHT = 250;

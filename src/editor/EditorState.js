@@ -32,7 +32,7 @@ export default class EditorState
     @observable
     activeTileIndex = 0;
 
-    @action
+    @action.bound
     toggleVisible(value = !this.visible)
     {
         this.visible = value;

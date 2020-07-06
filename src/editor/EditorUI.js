@@ -3,6 +3,7 @@ import cx from "classnames"
 // noinspection ES6UnusedImports
 import STYLE from "./ui.css"
 import { observer } from "mobx-react-lite";
+import Sidebar from "./Sidebar";
 
 const SelectButton = ({elem, index, active, onClick}) => {
 
@@ -41,25 +42,15 @@ const SizeBadge = memo(({sizeX, sizeY }) => {
 
 const EditorUI = observer(({ editorState, download, clearAll, undo, canUndo, redo, canRedo }) =>
 {
-    const { tiles, visible, activeTileIndex, activeTile, dirty } = editorState;
+    const { tiles, activeTileIndex, activeTile, dirty } = editorState;
 
     return (
         <>
-            <button
-                type="button"
-                accessKey="u"
-                className={ cx("btn btn-default toggle", visible && "visible") }
-                onClick={ () => editorState.toggleVisible()}
+            <Sidebar
+                visible={ editorState.visible }
+                setVisible={ editorState.toggleVisible }
             >
-                <i className="fas fa-arrows-alt-h"/>
 
-            </button>
-            <div
-                className={ cx("sidebar", visible && "visible") }
-                onFocusCapture={ () => editorState.toggleVisible(true)}
-
-            >
-                <div className="container">
                     <div className="row">
                         <div className="col">
                             <p className="form-control-plaintext border-bottom">
@@ -145,8 +136,7 @@ const EditorUI = observer(({ editorState, download, clearAll, undo, canUndo, red
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
+            </Sidebar>
         </>
     )
 })

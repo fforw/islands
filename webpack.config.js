@@ -23,9 +23,8 @@ module.exports = {
     entry: {
         "main": "./src/index.js",
         "editor": "./src/editor/editor.js",
-        "test": "./src/test-projection.js",
+        "bend": "./src/bend/bend.js",
         "height": "./src/test-height-limit.js",
-        "thumb": "./src/test-thumb.js",
         "morph": "./src/test-morph.js"
     },
 
@@ -52,9 +51,9 @@ module.exports = {
 
         new HtmlWebpackPlugin({
             inject: "body",
-            chunks: ["vendors", "test"],
+            chunks: ["vendors", "bend"],
             template: "src/template.html",
-            filename: "test.html"
+            filename: "bend.html"
         }),
 
         new HtmlWebpackPlugin({

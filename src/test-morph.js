@@ -27,6 +27,7 @@ import { CASE_NAMES, ICE, MATERIAL_NAMES } from "./constants";
 
 import { dump } from "./util/dump";
 import { InstancedBufferGeometry } from "three/src/core/InstancedBufferGeometry";
+import InstancedMeshSet, { attr1, attr3 } from "./instancing/InstancedMeshSet";
 
 
 const SKY_EFFECT = true;
@@ -51,6 +52,7 @@ const raycaster = new Raycaster();
 
 let organicQuads, envMap;
 
+let tilesGLTF;
 
 // how much to shrink down the individual tiles to we can see them 
 const SHRINK_SCALE = 0.9;
@@ -59,9 +61,9 @@ function drawTiles()
 {
 
     // generate vertices, normals and color data for a simple grid geometry
-    const {graph, tiles} = organicQuads;
+    const { graph, tiles } = organicQuads;
 
-    const {length} = tiles;
+    const { length } = tiles;
     tilesMesh = new Group();
 
     standardTileMaterial = new MeshStandardMaterial({
@@ -176,7 +178,6 @@ function drawTiles()
         mesh.position.set(0, 0, 0);
 
         tilesMesh.add(mesh)
-
     }
 
 
@@ -247,58 +248,9 @@ function updateSun()
 
 }
 
-const TILE_ATTRS_STRIDE = 15;
 
+let cubeCamera, sky, meshSet;
 
-let cubeCamera, sky;
-
-const dummy = new Object3D();
-
-function createInstancedMesh()
-{
-
-    const attrs = [];
-
-    const positionBuffer = new InterleavedBuffer(
-        new Float32Array(attrs),
-        TILE_ATTRS_STRIDE
-    );
-
-    const geometry = new InstancedBufferGeometry();
-
-    let inputGeo;
-
-    BufferGeometry.prototype.copy.call(geometry, inputGeo);
-
-    geometry.setAttribute("pos", new InterleavedBufferAttribute(positionBuffer, 3, 0, false));
-    geometry.setAttribute("up", new InterleavedBufferAttribute(positionBuffer, 3, 3, false));
-    geometry.setAttribute("vX1", new InterleavedBufferAttribute(positionBuffer, 3, 6, false));
-    geometry.setAttribute("vX2", new InterleavedBufferAttribute(positionBuffer, 3, 9, false));
-    geometry.setAttribute("vY1", new InterleavedBufferAttribute(positionBuffer, 3, 12, false));
-
-    //console.log("Instance count for ", MATERIAL_NAMES[i], "/", CASE_NAMES[j], " = ", count, geometry);
-
-    const count = attrs.length / TILE_ATTRS_STRIDE;
-    
-    const mesh = new InstancedMesh(geometry, material, count);
-    for (let i = 0; i < count; i++)
-    {
-        const idx = i * 3;
-        const x = positions[idx]
-        const y = positions[idx + 1]
-        const z = positions[idx + 2]
-
-        dummy.position.set(x, y, z);
-        //dummy.rotation.x = TAU/4;
-        dummy.updateMatrix();
-
-        mesh.setMatrixAt(i, dummy.matrix)
-    }
-
-    mesh.needsUpdate = true;
-
-    scene.add(mesh);
-}
 
 
 function init()
@@ -396,8 +348,28 @@ function init()
 
     drawTiles()
 
-    createInstancedMesh()
+    meshSet = new InstancedMeshSet(
+        tilesGLTF,
+        {
+            objects: [
+                {
+                    name: "tree_plateau"
+                }
+            ],
+            defaultCount: 100,
+            attributeDefs: [
+                attr3("pos"),
+                attr3("up"),
+                attr3("vX1"),
+                attr3("vX2"),
+                attr3("vY1"),
+                attr1("stiff"),
+                attr1("size")
+            ]
+        }
+    );
 
+    console.log("MESH-SET", meshSet);
 }
 
 
@@ -482,31 +454,7 @@ function render()
 }
 
 
-let waterNormals, marchingSquaresArray;
-
-
-function extractMarchingSquares(scene)
-{
-    const {children} = scene;
-
-    const array = new Array(CASE_NAMES.length);
-
-    for (let i = 0; i < children.length; i++)
-    {
-        const kid = children[i];
-
-        const index = CASE_NAMES.indexOf(kid.name);
-        if (index >= 0)
-        {
-            array[index] = kid.geometry;
-        }
-    }
-    return array;
-}
-
-
 let mouse = new Vector2(100, 0)
-
 
 function onDocumentMouseMove(event)
 {
@@ -536,7 +484,9 @@ function start()
 
             tStart = perfNow();
 
-            dump(ground.scene, "tiles: ")
+            tilesGLTF = _tiles
+
+            dump(tilesGLTF.scene, "tiles: ")
 
             materials = MATERIAL_NAMES.map(n => {
                 return ground.scene.children.find(kid => kid.name === n).material;
